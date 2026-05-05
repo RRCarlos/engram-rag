@@ -1,27 +1,31 @@
-// 🧠 Engram RAG Dashboard - Datos Reales (Proyecto: engram-rag)
+// 🧠 Engram RAG Dashboard - Datos Reales Actualizados (Proyecto: engram-rag)
 
-// Datos reales obtenidos de Engram (2026-05-05)
+// Datos reales obtenidos de Engram (2026-05-05) - TOTAL: 7 observaciones
 const engramData = {
-  totalObservations: 6,
+  totalObservations: 7,
   byAgent: {
     'sdd-spec': 1,
-    'orchestrator': 3,
-    'sdd-apply': 2
+    'orchestrator': 2,
+    'sdd-apply': 2,
+    'sdd-verify': 1,
+    'sdd-explore': 1
   },
   byTopic: {
     'sdd/engram-rag-fase-2/proposal': 2,
     'sdd/engram-rag-fase-2/specs': 1,
     'sdd/engram-rag-fase-2/implemented': 1,
     'sdd/engram-rag-fase-2/verified': 1,
-    'sdd/engram-rag-fase-2/dashboard': 1
+    'sdd/engram-rag-fase-2/dashboard': 1,
+    'discovery/agent-failure-sdd-apply': 1
   },
   recentObservations: [
+    { title: 'Fallo simulado: Uso de && en PowerShell', type: 'bugfix', date: '2026-05-05', agent: 'sdd-apply', topic: 'discovery/agent-failure-sdd-apply' },
     { title: 'Fase 2 Completada + Dashboard Creado', type: 'architecture', date: '2026-05-05', agent: 'orchestrator', topic: 'sdd/engram-rag-fase-2/dashboard' },
     { title: 'Fase 2 - Auditoría Formal Completada', type: 'architecture', date: '2026-05-05', agent: 'sdd-verify', topic: 'sdd/engram-rag-fase-2/verified' },
     { title: 'Fase 2 Implementación completada - 5 agentes', type: 'architecture', date: '2026-05-05', agent: 'sdd-apply', topic: 'sdd/engram-rag-fase-2/implemented' },
     { title: 'Fase 2 Specs completadas - Engram RAG', type: 'architecture', date: '2026-05-05', agent: 'sdd-spec', topic: 'sdd/engram-rag-fase-2/specs' },
-    { title: 'Fase 2 Prueba EXITOSA - RAG Check funcionando', type: 'architecture', date: '2026-05-05', agent: 'sdd-explore', topic: 'sdd/engram-rag-fase-2/verified' },
-    { title: 'Fase 2 Inyección completada - 5 agentes', type: 'architecture', date: '2026-05-05', agent: 'sdd-apply', topic: 'sdd/engram-rag-fase-2/implemented' }
+    { title: 'fase-2-proposal', type: 'architecture', date: '2026-05-05', agent: 'orchestrator', topic: 'sdd/engram-rag-fase-2/proposal' },
+    { title: 'Fase 2 Prueba EXITOSA - RAG Check funcionando', type: 'architecture', date: '2026-05-05', agent: 'sdd-explore', topic: 'sdd/engram-rag-fase-2/verified' }
   ]
 };
 
@@ -33,7 +37,7 @@ function renderDashboard(data) {
   // Renderizar gráfico de barras por agente
   const agentChart = document.getElementById('agent-chart');
   agentChart.innerHTML = '';
-  const maxValue = Math.max(...Object.values(data.byAgent));
+  const maxValue = Math.max(...Object.values(data.byAgent));  
   
   for (const [agent, count] of Object.entries(data.byAgent)) {
     const percentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
@@ -55,7 +59,7 @@ function renderDashboard(data) {
     topicsList.innerHTML += `<span class="topic-badge">${topic}</span>`;
   }
 
-  // Renderizar timeline
+  // Renderizar timeline (últimas 5)
   const timeline = document.getElementById('timeline');
   timeline.innerHTML = '';
   const recentItems = data.recentObservations.slice(0, 5);
@@ -69,7 +73,7 @@ function renderDashboard(data) {
   }
 
   // Actualizar estado de conexión a "Real"
-  document.getElementById('status-text').textContent = 'Conectado a Engram RAG (Real)';
+  document.getElementById('status-text').textContent = 'Conectado a Engram RAG (Real - 7 observaciones)';
 }
 
 // Función para simular actualización (Preparado para Fase 3: API Real)
@@ -85,7 +89,7 @@ function refreshData() {
   setTimeout(() => {
     renderDashboard(engramData);
     btn.disabled = false;
-    btn.innerHTML = '<span class="btn-icon">✅</span><span>Datos Reales Cargados</span>';
+    btn.innerHTML = '<span class="btn-icon">✅</span><span>Datos Reales Cargados (7)</span>';
     
     setTimeout(() => {
       btn.innerHTML = '<span class="btn-icon">🔄</span><span>Actualizar Datos</span>';

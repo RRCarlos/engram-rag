@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧠 Engram RAG Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header con Personalidad -->
+    <header class="header fade-in">
+      <div class="header-content">
+        <h1>🧠 Engram RAG Dashboard</h1>
+        <p class="subtitle">Minimalista · Funcional · Con Personalidad</p>
+      </div>
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span id="status-text">Conectado a Engram RAG (simulado)</span>
+      </div>
+    </header>
+
+    <!-- Grid de Tarjetas -->
+    <div class="grid">
+      <!-- Tarjeta 1: Total Observaciones -->
+      <div class="card fade-in" style="--delay: 0.1s">
+        <div class="card-icon">📊</div>
+        <div class="card-content">
+          <h2 class="card-title">Total Observaciones</h2>
+          <p class="card-number" id="total-obs">0</p>
+          <p class="card-subtitle">En project: engram-rag</p>
+        </div>
+      </div>
+
+      <!-- Tarjeta 2: Por Agente -->
+      <div class="card fade-in" style="--delay: 0.2s">
+        <div class="card-icon">🤖</div>
+        <div class="card-content">
+          <h2 class="card-title">Observaciones por Agente</h2>
+          <div class="bar-chart" id="agent-chart"></div>
+        </div>
+      </div>
+
+      <!-- Tarjeta 3: Topic Keys -->
+      <div class="card fade-in" style="--delay: 0.3s">
+        <div class="card-icon">🏷️</div>
+        <div class="card-content">
+          <h2 class="card-title">Topic Keys Activos</h2>
+          <div class="topics-list" id="topics-list"></div>
+        </div>
+      </div>
+
+      <!-- Tarjeta 4: Últimas Observaciones -->
+      <div class="card fade-in" style="--delay: 0.4s">
+        <div class="card-icon">⚡</div>
+        <div class="card-content">
+          <h2 class="card-title">Últimas Observaciones</h2>
+          <div class="timeline" id="timeline"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón Actualizar -->
+    <div class="action-bar fade-in" style="--delay: 0.5s">
+      <button class="btn-refresh" id="btn-refresh" onclick="refreshData()">
+        <span class="btn-icon">🔄</span>
+        <span>Actualizar Datos</span>
+      </button>
+      <p class="hint">Simulación de actualización desde Engram RAG</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer fade-in" style="--delay: 0.6s">
+      <p>🚀 Engram RAG for Agent Improvement • Fase 2: Inyección Completada</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

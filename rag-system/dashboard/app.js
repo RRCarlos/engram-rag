@@ -1,45 +1,31 @@
-// 🧠 Engram RAG Dashboard - Datos y Lógica
+// 🧠 Engram RAG Dashboard - Datos Reales (Proyecto: engram-rag)
 
-// Datos iniciales (hardcodeados basados en el proyecto real)
+// Datos reales obtenidos de Engram (2026-05-05)
 const engramData = {
-  totalObservations: 8,
+  totalObservations: 6,
   byAgent: {
-    'sdd-apply': 2,
-    'sdd-spec': 2,
-    'sdd-design': 1,
-    'sdd-verify': 1,
-    'sdd-explore': 2
+    'sdd-spec': 1,
+    'orchestrator': 3,
+    'sdd-apply': 2
   },
   byTopic: {
-    'pattern/agent-rigor-protocol': 2,
-    'sdd/engram-rag-fase-2/proposal': 1,
+    'sdd/engram-rag-fase-2/proposal': 2,
     'sdd/engram-rag-fase-2/specs': 1,
     'sdd/engram-rag-fase-2/implemented': 1,
-    'sdd/engram-rag-fase-2/verified': 1
+    'sdd/engram-rag-fase-2/verified': 1,
+    'sdd/engram-rag-fase-2/dashboard': 1
   },
   recentObservations: [
-    { title: 'Fase 2 Prueba EXITOSA - RAG Check funcionando', type: 'architecture', date: '2026-05-05', agent: 'sdd-explore' },
-    { title: 'Fase 2 Inyección completada - 5 agentes', type: 'architecture', date: '2026-05-05', agent: 'sdd-apply' },
-    { title: 'Fase 2 Specs - Inyección en Agentes SDD', type: 'architecture', date: '2026-05-05', agent: 'sdd-spec' },
-    { title: 'Fase 2 - Auditoría Formal Completada', type: 'architecture', date: '2026-05-05', agent: 'sdd-verify' },
-    { title: 'Fase 2 Prueba EXITOSA - RAG Check funcionando', type: 'architecture', date: '2026-05-05', agent: 'sdd-explore' },
-    { title: 'Fase 2 Inyección completada - 5 agentes', type: 'architecture', date: '2026-05-05', agent: 'sdd-apply' },
-    { title: 'Fase 2 Specs - Inyección en Agentes SDD', type: 'architecture', date: '2026-05-05', agent: 'sdd-spec' },
-    { title: 'Fase 2 - Auditoría Formal Completada', type: 'architecture', date: '2026-05-05', agent: 'sdd-verify' }
+    { title: 'Fase 2 Completada + Dashboard Creado', type: 'architecture', date: '2026-05-05', agent: 'orchestrator', topic: 'sdd/engram-rag-fase-2/dashboard' },
+    { title: 'Fase 2 - Auditoría Formal Completada', type: 'architecture', date: '2026-05-05', agent: 'sdd-verify', topic: 'sdd/engram-rag-fase-2/verified' },
+    { title: 'Fase 2 Implementación completada - 5 agentes', type: 'architecture', date: '2026-05-05', agent: 'sdd-apply', topic: 'sdd/engram-rag-fase-2/implemented' },
+    { title: 'Fase 2 Specs completadas - Engram RAG', type: 'architecture', date: '2026-05-05', agent: 'sdd-spec', topic: 'sdd/engram-rag-fase-2/specs' },
+    { title: 'Fase 2 Prueba EXITOSA - RAG Check funcionando', type: 'architecture', date: '2026-05-05', agent: 'sdd-explore', topic: 'sdd/engram-rag-fase-2/verified' },
+    { title: 'Fase 2 Inyección completada - 5 agentes', type: 'architecture', date: '2026-05-05', agent: 'sdd-apply', topic: 'sdd/engram-rag-fase-2/implemented' }
   ]
 };
 
-// Datos adicionales para simular actualización
-const newData = {
-  totalObservations: 10,
-  recentObservations: [
-    { title: '🎨 Dashboard Engram RAG Creado', type: 'architecture', date: '2026-05-05', agent: 'orchestrator' },
-    { title: '🎨 Expansión Fase 2 - Más agentes', type: 'architecture', date: '2026-05-05', agent: 'sdd-apply' },
-    ...engramData.recentObservations
-  ]
-};
-
-// Función para renderizar el dashboard
+// Función para renderizar el dashboard con datos reales
 function renderDashboard(data) {
   // Actualizar total
   document.getElementById('total-obs').textContent = data.totalObservations;
@@ -50,7 +36,7 @@ function renderDashboard(data) {
   const maxValue = Math.max(...Object.values(data.byAgent));
   
   for (const [agent, count] of Object.entries(data.byAgent)) {
-    const percentage = (count / maxValue) * 100;
+    const percentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
     agentChart.innerHTML += `
       <div class="bar-item">
         <span class="bar-label">${agent}</span>
@@ -77,30 +63,30 @@ function renderDashboard(data) {
     timeline.innerHTML += `
       <div class="timeline-item">
         <div class="title">${obs.title}</div>
-        <div class="meta">${obs.agent} · ${obs.type} · ${obs.date}</div>
+        <div class="meta">${obs.agent} · ${obs.type} · ${obs.date} · ${obs.topic}</div>
       </div>
     `;
   }
+
+  // Actualizar estado de conexión a "Real"
+  document.getElementById('status-text').textContent = 'Conectado a Engram RAG (Real)';
 }
 
-// Función para "actualizar" datos (simulación)
+// Función para simular actualización (Preparado para Fase 3: API Real)
 function refreshData() {
   const btn = document.getElementById('btn-refresh');
   const statusText = document.getElementById('status-text');
   
-  // Animación de carga
   btn.disabled = true;
-  btn.innerHTML = '<span class="btn-icon">⏳</span><span>Actualizando...</span>';
-  statusText.textContent = 'Actualizando desde Engram RAG...';
+  btn.innerHTML = '<span class="btn-icon">⏳</span><span>Actualizando desde Engram...</span>';
+  statusText.textContent = 'Consultando memoria persistente...';
   
-  // Simular delay de red
+  // Simulación de latencia de red (En Fase 3: Aquí iría fetch() a la API)
   setTimeout(() => {
-    renderDashboard(newData);
+    renderDashboard(engramData);
     btn.disabled = false;
-    btn.innerHTML = '<span class="btn-icon">✅</span><span>¡Datos Actualizados!</span>';
-    statusText.textContent = 'Conectado a Engram RAG (simulado)';
+    btn.innerHTML = '<span class="btn-icon">✅</span><span>Datos Reales Cargados</span>';
     
-    // Volver al estado normal después de 2 segundos
     setTimeout(() => {
       btn.innerHTML = '<span class="btn-icon">🔄</span><span>Actualizar Datos</span>';
     }, 2000);

@@ -20,7 +20,7 @@ import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { loadAllScenarios } from "../eval/suites.js";
-import { runScenario } from "../eval/runScenario.js";
+import { runScenario, type EvalAdapterKind, type RunScenarioOptions } from "../eval/runScenario.js";
 import type { EvalReport, Score } from "../eval/types.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,6 +34,8 @@ export interface EvalCliOptions {
   cwd?: string;
   command?: string;
   startedAt?: Date;
+  argv?: string[];
+  tools?: RunScenarioOptions["tools"];
 }
 
 export interface EvalCliResult {
@@ -113,16 +115,57 @@ function formatSummary(report: EvalReport): string {
   return lines.join("\n");
 }
 
+function parseArgs(argv: string[]): { adapter: EvalAdapterKind; baseUrl: string } {
+  let adapter: EvalAdapterKind = "fake";
+  let baseUrl = "http://127.0.0.1:7437";
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === "--adapter") {
+      const value = argv[i + 1];
+      if (value !== "fake" && value !== "live") {
+        throw new Error("--adapter must be either fake or live");
+      }
+      adapter = value;
+      i += 1;
+      continue;
+    }
+    if (arg === "--base-url") {
+      const value = argv[i + 1];
+      if (value === undefined || value.startsWith("--")) {
+        throw new Error("Missing value for --base-url");
+      }
+      baseUrl = value;
+      i += 1;
+      continue;
+    }
+    if (arg === "--cwd") {
+      i += 1;
+      continue;
+    }
+    throw new Error(`Unknown flag: ${arg}`);
+  }
+
+  return { adapter, baseUrl };
+}
+
 export async function runEvalCli(options: EvalCliOptions = {}): Promise<EvalCliResult> {
   const command = options.command ?? "node --import tsx src/cli/eval.ts";
   const startedAt = options.startedAt ?? new Date();
+  const parsed = parseArgs(options.argv ?? []);
   const scenarios = loadAllScenarios();
   const scores: Score[] = [];
   for (const scenario of scenarios) {
-    scores.push(await runScenario(scenario));
+    scores.push(
+      await runScenario(scenario, {
+        adapter: parsed.adapter,
+        baseUrl: parsed.baseUrl,
+        tools: options.tools,
+      }),
+    );
   }
   const finishedAt = new Date();
-  const report = buildReport("phase4-default", "fake", scores, startedAt, finishedAt, command);
+  const report = buildReport("phase4-default", parsed.adapter, scores, startedAt, finishedAt, command);
   mkdirSync(REPORT_DIR, { recursive: true });
   writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2), "utf8");
   const stdout = formatSummary(report);
@@ -144,7 +187,7 @@ const invokedDirectly =
   import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (invokedDirectly) {
-  runEvalCli({ cwd: process.cwd() })
+  runEvalCli({ cwd: process.cwd(), argv: process.argv.slice(2) })
     .then((result) => {
       console.log(result.stdout);
       if (result.stderr) {

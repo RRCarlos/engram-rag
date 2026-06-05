@@ -9,7 +9,7 @@ remove any of them.
 | # | Command | Expected outcome |
 |---|---------|------------------|
 | 1 | `npm install` | Exits 0. No peer-dep warnings that block subsequent steps. |
-| 2 | `npm test` | Exits 0. All Phase 1 task tests (`smoke`, `v1-forensics`, `topicKeys`, `knowledgeRecord`, `powershell-and`, `sdd-spec-gherkin`, `retrieval`, `retrievalPlan`, `noLegacyTopicKeys`, `workflow`, `verifyPhase1`, `phase1-acceptance`) report green. |
+| 2 | `npm test` | Exits 0. All non-recursive Phase 1 task tests (`smoke`, `v1-forensics`, `topicKeys`, `knowledgeRecord`, `powershell-and`, `sdd-spec-gherkin`, `retrieval`, `retrievalPlan`, `noLegacyTopicKeys`, `workflow`, `phase1-acceptance`) report green. Verify-script integration tests are intentionally excluded from `npm test`; the verify scripts themselves are the closure gates. |
 | 3 | `npm run verify:phase1` | Exits 0 AND writes `reports/phase1/verify-report.json`. |
 
 ## Required artifact
@@ -37,8 +37,9 @@ remove any of them.
 3. Run `npm run verify:phase1`. The report file is rewritten on
    every run; commit it (or its diff) only when the change is
    complete and green.
-4. Open a PR. The CI workflow runs `npm ci`, `npm test`, and
-   `npm run verify:phase1` on every push and pull request.
+4. Open a PR. The CI workflow runs `npm ci`, `npm test`,
+   `npm run verify:phase1`, and (from Phase 2 onward)
+   `npm run verify:phase2` on every push and pull request.
 5. Merge only when CI is green AND the local `verify-report.json`
    from step 3 shows zero failures.
 ```

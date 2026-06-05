@@ -27,6 +27,16 @@ describe("ci workflow", () => {
     expect(wf).toMatch(/run:\s*npm test/);
   });
 
+  it("runs Phase 1 and Phase 2 verify scripts after the test suite", () => {
+    const wf = readWorkflow();
+    const testIndex = wf.indexOf("run: npm test");
+    const phase1Index = wf.indexOf("run: npm run verify:phase1");
+    const phase2Index = wf.indexOf("run: npm run verify:phase2");
+
+    expect(phase1Index).toBeGreaterThan(testIndex);
+    expect(phase2Index).toBeGreaterThan(phase1Index);
+  });
+
   it("triggers on push and pull_request to main", () => {
     const wf = readWorkflow();
     expect(wf).toMatch(/push:/);

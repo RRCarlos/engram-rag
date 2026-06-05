@@ -1,12 +1,14 @@
 ---
 title: "Engram RAG v2 — Phase 3 task plan (skill integration verificable)"
 version: "2.0"
-status: "active"
+status: "archived"
 date: "2026-06-05"
 project: "engram-rag"
 artifact: "phase3-tasks"
 parent_design: "rag-system/v2/design.md"
 canonical_topic_key: "engram-rag/agent-rigor-protocol/v2"
+closed_at: "2026-06-05"
+closed_by: "PRs #8 (foundation), #9 (runtime), #10 (closure); main f6568b1"
 ---
 
 # Phase 3 task plan

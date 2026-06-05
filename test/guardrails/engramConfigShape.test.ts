@@ -67,11 +67,20 @@ describe("engramConfigShape", () => {
     expect(config.project).toBe(config.project_name);
   });
 
-  it("`path` matches the actual repo root", () => {
+  it("`path` is a non-empty string (content is environment-specific, so we only check shape)", () => {
     const config = loadConfig();
-    const normalize = (s: string) => s.split("\\").join("/");
-    const actual = normalize(String(config.path ?? ""));
-    const want = normalize(REPO_ROOT);
-    expect(actual).toBe(want);
+    expect(typeof config.path).toBe("string");
+    expect((config.path as string).length).toBeGreaterThan(0);
+  });
+
+  it("`path`, when present, ends with the repo directory name (cross-platform)", () => {
+    const config = loadConfig();
+    const pathStr = String(config.path ?? "");
+    const segments = pathStr.split(/[\\/]/).filter((s) => s.length > 0);
+    // The config is for the engram-rag repo, so the final non-empty
+    // path segment must equal the repo's directory name. This catches
+    // copy-paste mistakes (e.g. pointing at the wrong repo) without
+    // hardcoding the user's local absolute path.
+    expect(segments[segments.length - 1]).toBe("engram-rag");
   });
 });

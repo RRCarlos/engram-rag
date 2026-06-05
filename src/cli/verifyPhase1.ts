@@ -19,7 +19,7 @@
  * is written so reviewers can see the gap.
  */
 
-import { execFileSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -79,27 +79,18 @@ function main(): void {
   let totalTests = 0;
 
   try {
-    // Use `shell: true` so Node selects the platform shell
-    // (cmd.exe on Windows, /bin/sh on Linux/macOS) to spawn `npx`.
-    // A hardcoded `cmd.exe /c` wrapper only works on Windows; on
-    // Linux CI runners `cmd.exe` does not exist and the spawn
-    // throws ENOENT. With `shell: true` and an array command, Node
-    // handles the quoting per platform. The args are constant — no
-    // untrusted input — so the shell-injection risk is moot.
-    const raw = execFileSync(
-      "npx",
-      [
-        "vitest",
-        "run",
-        "--reporter=json",
-        "--exclude",
-        "test/cli/verifyPhase1.test.ts",
-      ],
+    // Use execSync so Node selects the platform shell (cmd.exe on
+    // Windows, /bin/sh on Linux/macOS) to spawn `npx`. A hardcoded
+    // `cmd.exe /c` wrapper only works on Windows; a command string
+    // avoids Node 24's warning about passing args with `shell: true`.
+    // The command is constant — no untrusted input — so the shell-
+    // injection risk is moot.
+    const raw = execSync(
+      "npx vitest run --reporter=json --exclude test/cli/verifyPhase*.test.ts",
       {
         cwd: REPO_ROOT,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
-        shell: true,
       },
     );
     // vitest's JSON reporter prints one or more JSON objects. The

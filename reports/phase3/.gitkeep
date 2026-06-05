@@ -1,0 +1,6 @@
+---
+name: dummy
+description: "Touches the .gitkeep so the empty reports/phase3 directory is tracked by git. This file is intentionally NOT a real skill: the verify CLI ignores files whose name does not start with a valid AgentId, so the dummy stays a no-op fixture."
+---
+
+# (intentional placeholder, not a real skill)

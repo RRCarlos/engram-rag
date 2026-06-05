@@ -110,7 +110,10 @@ describe("renderRagBlock", () => {
 describe("fixtures are present and parseable", () => {
   it("sdd-apply-clean.md exists and has frontmatter", () => {
     const content = readFixture("sdd-apply-clean.md");
-    expect(content.startsWith("---\n")).toBe(true);
+    // Be line-ending agnostic: on Windows with `core.autocrlf=true`
+    // the fixture is checked out as CRLF, so the boundary after the
+    // opening `---` may be `\r\n` or `\n` depending on platform.
+    expect(content.startsWith("---")).toBe(true);
   });
 
   it("sdd-apply-patched.md exists and contains a RAG block for sdd-apply", () => {

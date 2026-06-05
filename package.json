@@ -6,10 +6,11 @@
   "type": "module",
   "scripts": {
     "test": "vitest run --exclude \"test/cli/verifyPhase*.test.ts\"",
-    "test:verify": "vitest run test/cli/verifyPhase1.test.ts test/cli/verifyPhase2.test.ts",
+    "test:verify": "vitest run test/cli/verifyPhase1.test.ts test/cli/verifyPhase2.test.ts test/cli/verifyPhase3.test.ts",
     "test:watch": "vitest",
     "verify:phase1": "node --import tsx src/cli/verifyPhase1.ts",
-    "verify:phase2": "node --import tsx src/cli/verifyPhase2.ts"
+    "verify:phase2": "node --import tsx src/cli/verifyPhase2.ts",
+    "verify:phase3": "node --import tsx src/cli/verifyPhase3.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

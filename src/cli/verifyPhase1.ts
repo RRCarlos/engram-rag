@@ -79,22 +79,27 @@ function main(): void {
   let totalTests = 0;
 
   try {
-    // On Windows the child shell needs `cmd.exe /c` to spawn `npx`
-    // reliably when this script is itself called from a `bash`-via-
-    // PowerShell context. The CLI test that calls this script does
-    // not use bash, but the documented orchestrator does, so the
-    // wrapper keeps the behavior consistent across invocation
-    // surfaces.
+    // Use `shell: true` so Node selects the platform shell
+    // (cmd.exe on Windows, /bin/sh on Linux/macOS) to spawn `npx`.
+    // A hardcoded `cmd.exe /c` wrapper only works on Windows; on
+    // Linux CI runners `cmd.exe` does not exist and the spawn
+    // throws ENOENT. With `shell: true` and an array command, Node
+    // handles the quoting per platform. The args are constant — no
+    // untrusted input — so the shell-injection risk is moot.
     const raw = execFileSync(
-      "cmd.exe",
+      "npx",
       [
-        "/c",
-        "npx vitest run --reporter=json --exclude test/cli/verifyPhase1.test.ts",
+        "vitest",
+        "run",
+        "--reporter=json",
+        "--exclude",
+        "test/cli/verifyPhase1.test.ts",
       ],
       {
         cwd: REPO_ROOT,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
+        shell: true,
       },
     );
     // vitest's JSON reporter prints one or more JSON objects. The

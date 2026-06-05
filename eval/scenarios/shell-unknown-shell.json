@@ -1,0 +1,16 @@
+{
+  "id": "shell-unknown-shell",
+  "description": "Shell task with `unknown` shell kind. Adapter must still surface the PowerShell-&&-is-not-bash record because the task text mentions PowerShell, even though the request field is unset.",
+  "project": "engram-rag",
+  "agent_id": "sdd-apply",
+  "task_text": "Run an npm install followed by a build inside a PowerShell pipeline. The shell is reported as unknown by the harness, but the task text still implies PowerShell semantics.",
+  "action_kind": "shell",
+  "shell": "unknown",
+  "expected_record_topic_keys": [
+    "engram-rag/failures/sdd-apply/powershell-and"
+  ],
+  "expected_applied_rules": [
+    "Used `&&` to chain commands inside a PowerShell bash tool call."
+  ],
+  "max_latency_ms": 2000
+}

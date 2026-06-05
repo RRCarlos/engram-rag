@@ -1,0 +1,16 @@
+{
+  "id": "powershell-and",
+  "description": "PowerShell task: chain two commands. Adapter must surface the PowerShell-&&-is-not-bash record.",
+  "project": "engram-rag",
+  "agent_id": "sdd-apply",
+  "task_text": "Chain `npm install` and `npm test` in PowerShell. Naively using `&&` will fail because PowerShell does not support POSIX-style `&&` chaining.",
+  "action_kind": "shell",
+  "shell": "powershell",
+  "expected_record_topic_keys": [
+    "engram-rag/failures/sdd-apply/powershell-and"
+  ],
+  "expected_applied_rules": [
+    "Used `&&` to chain commands inside a PowerShell bash tool call."
+  ],
+  "max_latency_ms": 2000
+}

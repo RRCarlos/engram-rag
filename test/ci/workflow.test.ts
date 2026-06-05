@@ -12,9 +12,9 @@ function readWorkflow(): string {
 }
 
 describe("ci workflow", () => {
-  it("declares Node 20", () => {
+  it("declares Node 24", () => {
     const wf = readWorkflow();
-    expect(wf).toMatch(/node-version:\s*["']?20["']?/);
+    expect(wf).toMatch(/node-version:\s*["']?24["']?/);
   });
 
   it("runs npm ci to install dependencies", () => {

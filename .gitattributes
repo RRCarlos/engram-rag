@@ -1,0 +1,51 @@
+# Line-ending policy for the engram-rag repository.
+#
+# Forces LF line endings in the working tree and in the index for
+# every source, test, doc, fixture, and config file. This pairs
+# with `git config --local core.autocrlf false` (set in the repo)
+# so the global Windows autocrlf=true does NOT re-convert to CRLF
+# on checkout.
+#
+# Why explicit instead of just `* text=auto eol=lf`:
+#   - The patcher in src/skills/patchSkill.ts does a byte-for-byte
+#     idempotency check (`replaced === content`). Mixing LF and
+#     CRLF in fixtures (some committed as LF, others as CRLF) makes
+#     that check unstable across platforms. Forcing LF on all files
+#     makes the check deterministic everywhere.
+#   - Markdown line endings matter for diff readability, not for
+#     rendering. LF makes PR diffs small and consistent.
+#   - JSON is a wire format; mixing CRLF into it would break
+#     anything that parses the raw bytes (Vitest does).
+
+# Source code, tests, fixtures, docs, config: always LF.
+*.md         text eol=lf
+*.ts         text eol=lf
+*.tsx        text eol=lf
+*.js         text eol=lf
+*.cjs        text eol=lf
+*.mjs        text eol=lf
+*.json       text eol=lf
+*.jsonc      text eol=lf
+*.yml        text eol=lf
+*.yaml       text eol=lf
+*.txt        text eol=lf
+*.gitignore  text eol=lf
+.gitattributes text eol=lf
+
+# Shell scripts and git hooks: LF only (shebangs assume LF).
+*.sh         text eol=lf
+*.bash       text eol=lf
+
+# Binary assets, if any are added later, must be marked binary
+# explicitly. There are none today; the policy below is a guard
+# for the future and a comment for any contributor who tries to
+# commit something like an image.
+*.png        binary
+*.jpg        binary
+*.jpeg       binary
+*.gif        binary
+*.ico        binary
+*.pdf        binary
+*.zip        binary
+*.gz         binary
+*.tgz        binary

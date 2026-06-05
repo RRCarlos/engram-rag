@@ -31,6 +31,12 @@ const ALLOWED_EXCEPTIONS = new Set<string>([
   // echo the alias literals; doing that assertion requires the test
   // file to mention the strings (inside `not.toContain(...)` calls).
   "test/skills/renderRagBlock.test.ts",
+  // Phase 4: the acceptance doc and its docs test enumerate the
+  // forbidden aliases so reviewers and downstream agents know what
+  // the G4 gate checks against. The contract is meaningful only if
+  // the literal aliases are present, similar to v1-forensics.md.
+  "docs/phase4-acceptance.md",
+  "test/docs/phase4-acceptance.test.ts",
   // Phase 3 fixture: a hand-written SKILL.md whose RAG block carries
   // a forbidden v1 topic tag on purpose, to assert the verifier
   // rejects it. The fixture cannot be rewritten without losing the

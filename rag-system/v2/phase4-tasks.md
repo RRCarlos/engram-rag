@@ -1,8 +1,10 @@
 ---
 title: "Engram RAG v2 — Phase 4 task plan (evaluation harness and CI gates)"
 version: "2.0"
-status: "active"
+status: "archived"
 date: "2026-06-05"
+closed_at: "2026-06-05"
+closed_by: "PRs #13, #14, #15; main <PR-C SHA>"
 project: "engram-rag"
 artifact: "phase4-tasks"
 parent_design: "rag-system/v2/design.md"

@@ -9,6 +9,7 @@
     "test:verify": "vitest run test/cli/verifyPhase1.test.ts test/cli/verifyPhase2.test.ts test/cli/verifyPhase3.test.ts test/cli/verifyPhase4.test.ts",
     "test:watch": "vitest",
     "eval": "node --import tsx src/cli/eval.ts",
+    "patch:live-skills": "node --import tsx src/cli/patchLiveSkills.ts",
     "verify:phase1": "node --import tsx src/cli/verifyPhase1.ts",
     "verify:phase2": "node --import tsx src/cli/verifyPhase2.ts",
     "verify:phase3": "node --import tsx src/cli/verifyPhase3.ts",

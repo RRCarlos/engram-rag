@@ -28,3 +28,6 @@ jobs:
 
       - name: Run Phase 1 verify
         run: npm run verify:phase1
+
+      - name: Run Phase 2 verify
+        run: npm run verify:phase2

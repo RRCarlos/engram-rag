@@ -66,6 +66,8 @@ export const ScoreSchema = z
     missing_expected_records: z.array(z.string()),
     missing_expected_rules: z.array(z.string()),
     latency_ms: z.number().nonnegative(),
+    latency_budget_ms: z.number().positive(),
+    latency_breached: z.boolean(),
     degraded: z.boolean(),
     pass: z.boolean(),
   })

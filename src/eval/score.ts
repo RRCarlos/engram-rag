@@ -26,6 +26,7 @@ export interface ScoringInput {
   expected_applied_rules: string[];
   retrieved_applied_rules: string[];
   latency_ms: number;
+  latency_budget_ms: number;
   degraded: boolean;
 }
 
@@ -64,9 +65,12 @@ export function scoreRetrieval(input: ScoringInput): Score {
     input.retrieved_applied_rules,
   );
 
+  const latency_breached = input.latency_ms > input.latency_budget_ms;
+
   const pass =
     top3 >= MIN_TOP3_HIT_RATE &&
     missingExpectedRules.length === 0 &&
+    latency_breached === false &&
     input.degraded === false;
 
   return {
@@ -79,6 +83,8 @@ export function scoreRetrieval(input: ScoringInput): Score {
     missing_expected_records: missingExpectedRecords,
     missing_expected_rules: missingExpectedRules,
     latency_ms: input.latency_ms,
+    latency_budget_ms: input.latency_budget_ms,
+    latency_breached,
     degraded: input.degraded,
     pass,
   };

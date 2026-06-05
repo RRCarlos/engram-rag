@@ -24,6 +24,18 @@ const ALLOWED_EXCEPTIONS = new Set<string>([
   // test file is allowed to import the constant array. The actual
   // strings live in the policy file above.
   "test/guardrails/noLegacyTopicKeys.test.ts",
+  // Phase 3: the verifier test exercises forbidden-alias detection,
+  // so the test file must be allowed to mention the alias literals.
+  "test/skills/verifySkill.test.ts",
+  // Phase 3: the renderer test asserts that the block body does NOT
+  // echo the alias literals; doing that assertion requires the test
+  // file to mention the strings (inside `not.toContain(...)` calls).
+  "test/skills/renderRagBlock.test.ts",
+  // Phase 3 fixture: a hand-written SKILL.md whose RAG block carries
+  // a forbidden v1 topic tag on purpose, to assert the verifier
+  // rejects it. The fixture cannot be rewritten without losing the
+  // thing it is testing.
+  "test/fixtures/skills/wrong-topic.md",
 ]);
 
 const SCAN_ROOTS = [

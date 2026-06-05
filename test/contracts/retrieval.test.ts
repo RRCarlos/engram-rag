@@ -72,12 +72,12 @@ describe("retrieval contract", () => {
     expect(result.success).toBe(true);
   });
 
-  it("defaultForbiddenTopicAliases includes canonical and all v1 aliases", () => {
+  it("defaultForbiddenTopicAliases includes v1 aliases and excludes the canonical key", () => {
     const aliases = defaultForbiddenTopicAliases();
-    expect(aliases).toContain(CANONICAL_PROTOCOL_TOPIC_KEY);
     expect(aliases.length).toBeGreaterThan(0);
-    // The canonical key must not be marked as forbidden in the policy
-    // list itself — the planner uses this for *context* queries.
+    // The canonical key is the target of searches, not a forbidden
+    // alias; ensure the policy does not mix those roles up.
+    expect(aliases).not.toContain(CANONICAL_PROTOCOL_TOPIC_KEY);
   });
 
   it("parses a minimal RetrievalPlan", () => {

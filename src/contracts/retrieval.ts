@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { AgentIdSchema } from "./knowledgeRecord.js";
-import {
-  CANONICAL_PROTOCOL_TOPIC_KEY,
-  FORBIDDEN_TOPIC_ALIASES,
-} from "./topicKeys.js";
+import { FORBIDDEN_TOPIC_ALIASES } from "./topicKeys.js";
 
 /**
  * Zod schemas for the retrieval contract.
@@ -94,5 +91,5 @@ export function parseRetrievalPlan(input: unknown): RetrievalPlan {
  * drift from the live policy.
  */
 export function defaultForbiddenTopicAliases(): string[] {
-  return [...FORBIDDEN_TOPIC_ALIASES, CANONICAL_PROTOCOL_TOPIC_KEY];
+  return [...FORBIDDEN_TOPIC_ALIASES];
 }

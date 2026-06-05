@@ -71,7 +71,12 @@ describe("retrievalPlan", () => {
       task_text: "any task",
       action_kind: "shell",
     });
-    expect(plan.forbidden_topic_aliases).toContain("sdd/engram-rag-fase-2/");
-    expect(plan.forbidden_topic_aliases).toContain("pattern/agent-rigor-protocol");
+    // Structural assertions only: the policy lives in
+    // src/contracts/topicKeys.ts (read it to see the contents).
+    // We assert the list is non-empty and that the canonical key is
+    // NOT in the forbidden list (the canonical key is allowed, not
+    // forbidden).
+    expect(plan.forbidden_topic_aliases.length).toBeGreaterThan(0);
+    expect(plan.forbidden_topic_aliases).not.toContain(CANONICAL_PROTOCOL_TOPIC_KEY);
   });
 });

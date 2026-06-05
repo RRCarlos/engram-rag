@@ -52,7 +52,7 @@ describe("knowledgeRecord", () => {
   it("rejects a non-canonical canonical_protocol_topic_key", () => {
     const result = safeParseKnowledgeRecord({
       ...baseValid,
-      canonical_protocol_topic_key: "pattern/agent-rigor-protocol",
+      canonical_protocol_topic_key: "engram-rag/agent-rigor-protocol/v9-wrong",
     });
     expect(result.ok).toBe(false);
   });

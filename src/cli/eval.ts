@@ -17,7 +17,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { loadAllScenarios } from "../eval/suites.js";
 import { runScenario } from "../eval/runScenario.js";
@@ -134,11 +134,14 @@ export async function runEvalCli(options: EvalCliOptions = {}): Promise<EvalCliR
   };
 }
 
-// Run when invoked directly. The branch is `import.meta.url === pathToFileURL(process.argv[1])`.
-// Guarded by the standard Node guard pattern.
+// Run when invoked directly. We compare the entry script's
+// path via `pathToFileURL` (the platform-correct way) to
+// `import.meta.url`. Hand-rolled `file:///${...}` does not
+// match on POSIX (the leading slash in absolute paths is
+// doubled), so we always use `pathToFileURL`.
 const invokedDirectly =
   process.argv[1] !== undefined &&
-  import.meta.url === new URL(`file:///${process.argv[1].replace(/\\/g, "/")}`).href;
+  import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (invokedDirectly) {
   runEvalCli({ cwd: process.cwd() })

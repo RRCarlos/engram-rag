@@ -34,3 +34,6 @@ jobs:
 
       - name: Run Phase 3 verify
         run: npm run verify:phase3
+
+      - name: Run Phase 4 verify
+        run: npm run verify:phase4

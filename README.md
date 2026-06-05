@@ -20,7 +20,7 @@ machine-readable report.
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1. Knowledge contract + retrieval planner | Implemented (this PR) | `npm test` + `npm run verify:phase1` are green. |
+| 1. Knowledge contract + retrieval planner | Implemented ([PR #1](https://github.com/RRCarlos/engram-rag/pull/1)) | `npm test` + `npm run verify:phase1` are green. |
 | 2. Engram preflight adapter | Designed, not built | See `rag-system/v2/design.md` §4. |
 | 3. Skill integration | Designed, not built | See `rag-system/v2/design.md` §5. |
 | 4. Evaluation harness | Designed, not built | See `rag-system/v2/design.md` §6. |

@@ -1,0 +1,16 @@
+{
+  "id": "convention-skill-frontmatter",
+  "description": "Skill authoring task: embed the Engram RAG block. Adapter must surface the convention failure so the patcher is invoked with the canonical topic key.",
+  "project": "engram-rag",
+  "agent_id": "sdd-apply",
+  "task_text": "Update an OpenCode skill under `~/.config/opencode/skills/<agent>/SKILL.md`. The YAML frontmatter is present and the file is on disk, so the patcher must insert the Engram RAG block in place.",
+  "action_kind": "write",
+  "shell": "unknown",
+  "expected_record_topic_keys": [
+    "engram-rag/failures/sdd-apply/skill-frontmatter"
+  ],
+  "expected_applied_rules": [
+    "OpenCode skill shipped without a valid YAML frontmatter or with a hand-written Engram RAG block using a forbidden v1 topic alias."
+  ],
+  "max_latency_ms": 2000
+}

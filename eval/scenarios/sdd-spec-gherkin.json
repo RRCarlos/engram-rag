@@ -1,0 +1,16 @@
+{
+  "id": "sdd-spec-gherkin",
+  "description": "Spec authoring task: write a spec for a new feature. Adapter must surface the Gherkin-missing-scenarios record.",
+  "project": "engram-rag",
+  "agent_id": "sdd-spec",
+  "task_text": "Write a spec for the new feature. Plain requirement bullets are not enough: every requirement must be backed by a Given/When/Then scenario so sdd-verify has executable acceptance criteria.",
+  "action_kind": "spec",
+  "shell": "unknown",
+  "expected_record_topic_keys": [
+    "engram-rag/failures/sdd-spec/gherkin-missing"
+  ],
+  "expected_applied_rules": [
+    "Spec file shipped with plain requirement bullets but no Given/When/Then scenarios, leaving the sdd-verify and downstream agents without executable acceptance criteria."
+  ],
+  "max_latency_ms": 2000
+}

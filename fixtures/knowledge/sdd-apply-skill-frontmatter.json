@@ -1,0 +1,24 @@
+{
+  "schema_version": "2.0",
+  "topic_key": "engram-rag/failures/sdd-apply/skill-frontmatter",
+  "canonical_protocol_topic_key": "engram-rag/agent-rigor-protocol/v2",
+  "agent_id": "sdd-apply",
+  "failure_kind": "convention",
+  "failure_signature": "OpenCode skill shipped without a valid YAML frontmatter or with a hand-written Engram RAG block using a forbidden v1 topic alias.",
+  "trigger_terms": [
+    "skill",
+    "opencode",
+    "frontmatter",
+    "yaml",
+    "engram-rag-block",
+    "sdd-apply",
+    "skill-convention"
+  ],
+  "validated_solution": "OpenCode SKILL.md files must have a YAML frontmatter with `name` and `description` keys at the top of the file. The Engram RAG block must be inserted by the patcher, never hand-written, and must use the canonical v2 topic key `engram-rag/agent-rigor-protocol/v2` only. Forbidden v1 topic aliases (e.g. `engram-rag/agent-rigor-protocol/v1`, `engram-rag/agent-rigor-protocol`, `agent-rigor-protocol`, `engram-rag-protocol`) are rejected by the verifier.",
+  "evidence_refs": [
+    "docs/evidence/v1-forensics.md",
+    "src/contracts/topicKeys.ts (FORBIDDEN_TOPIC_ALIASES)"
+  ],
+  "validation_status": "validated",
+  "last_validated_at": "2026-06-05T15:30:00.000Z"
+}

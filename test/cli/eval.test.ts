@@ -2,6 +2,9 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { runEvalCli } from "../../src/cli/eval.js";
+import { createFakeAdapter } from "../../src/engram/fakeEngramAdapter.js";
+import { loadAllKnowledgeRecords } from "../../src/eval/runScenario.js";
 import { parseEvalReport } from "../../src/eval/types.js";
 
 const REPO_ROOT = resolve(__dirname, "..", "..");
@@ -45,6 +48,7 @@ describe("eval CLI subprocess", () => {
     const raw = JSON.parse(readFileSync(REPORT_PATH, "utf8"));
     const report = parseEvalReport(raw);
     expect(report.suite).toBe("phase4-default");
+    expect(report.adapter).toBe("fake");
     expect(report.scenarios_total).toBeGreaterThanOrEqual(5);
   });
 
@@ -55,5 +59,29 @@ describe("eval CLI subprocess", () => {
     expect(result.stdout).toMatch(/\[PASS\] shell-unknown-shell/);
     expect(result.stdout).toMatch(/\[PASS\] convention-skill-frontmatter/);
     expect(result.stdout).toMatch(/\[PASS\] spec-gherkin-with-extra-noise/);
+  });
+
+  it("defaults to the fake adapter in-process", async () => {
+    const result = await runEvalCli({ command: "test eval" });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.report.adapter).toBe("fake");
+  });
+
+  it("can mark the live adapter path with injected tools", async () => {
+    const result = await runEvalCli({
+      command: "test eval --adapter live",
+      argv: ["--adapter", "live"],
+      tools: createFakeAdapter(loadAllKnowledgeRecords()),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.report.adapter).toBe("live");
+  });
+
+  it.skipIf(process.env.ENGRAM_LIVE !== "1")("runs live smoke only when ENGRAM_LIVE=1", async () => {
+    const result = await runEvalCli({ argv: ["--adapter", "live"] });
+
+    expect(result.report.adapter).toBe("live");
   });
 });

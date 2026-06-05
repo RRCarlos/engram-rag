@@ -1,0 +1,23 @@
+{
+  "schema_version": "2.0",
+  "topic_key": "engram-rag/failures/sdd-spec/gherkin-missing",
+  "canonical_protocol_topic_key": "engram-rag/agent-rigor-protocol/v2",
+  "agent_id": "sdd-spec",
+  "failure_kind": "spec",
+  "failure_signature": "Spec file shipped with plain requirement bullets but no Given/When/Then scenarios, leaving the sdd-verify and downstream agents without executable acceptance criteria.",
+  "trigger_terms": [
+    "spec",
+    "gherkin",
+    "given when then",
+    "scenario",
+    "sdd-spec",
+    "missing-scenarios"
+  ],
+  "validated_solution": "Every requirement in a spec MUST be backed by at least one Given/When/Then scenario. If scenarios are missing, the spec is rejected by sdd-verify before any implementation begins.",
+  "evidence_refs": [
+    "docs/evidence/v1-forensics.md",
+    "rag-system/v2/design.md (sections 2.2 and 3)"
+  ],
+  "validation_status": "validated",
+  "last_validated_at": "2026-06-05T15:30:00.000Z"
+}

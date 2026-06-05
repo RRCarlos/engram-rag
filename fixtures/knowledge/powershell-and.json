@@ -1,0 +1,22 @@
+{
+  "schema_version": "2.0",
+  "topic_key": "engram-rag/failures/sdd-apply/powershell-and",
+  "canonical_protocol_topic_key": "engram-rag/agent-rigor-protocol/v2",
+  "agent_id": "sdd-apply",
+  "failure_kind": "shell",
+  "failure_signature": "Used `&&` to chain commands inside a PowerShell bash tool call.",
+  "trigger_terms": [
+    "powershell",
+    "&&",
+    "cd foo && npm install",
+    "powershell-and",
+    "shell-chain"
+  ],
+  "validated_solution": "PowerShell does NOT support `&&` like POSIX shells. Replace `cmd1 && cmd2` with `cmd1; if ($?) { cmd2 }`. See the Engram PowerShell `&&` bug observation and the documented Engram bug note in the orchestrator instructions.",
+  "evidence_refs": [
+    "docs/evidence/v1-forensics.md",
+    "Engram observation #728 (engram-rag/repo-state-2026-06-05)"
+  ],
+  "validation_status": "validated",
+  "last_validated_at": "2026-06-05T15:30:00.000Z"
+}

@@ -1,0 +1,3 @@
+# Ensures the reports/phase1 directory is tracked in git even when
+# verify-report.json is git-ignored. The verify script creates the
+# file on every run; the directory itself is a stable path.

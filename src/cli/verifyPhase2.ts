@@ -118,7 +118,7 @@ async function main(): Promise<void> {
 
   try {
     const raw = execSync(
-      "npx vitest run --reporter=json --exclude test/cli/verifyPhase*.test.ts",
+      "npx vitest run --reporter=json --exclude \"test/cli/verifyPhase*.test.ts\"",
       {
         cwd: REPO_ROOT,
         encoding: "utf8",

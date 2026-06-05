@@ -86,7 +86,7 @@ function main(): void {
     // The command is constant — no untrusted input — so the shell-
     // injection risk is moot.
     const raw = execSync(
-      "npx vitest run --reporter=json --exclude test/cli/verifyPhase*.test.ts",
+      "npx vitest run --reporter=json --exclude \"test/cli/verifyPhase*.test.ts\"",
       {
         cwd: REPO_ROOT,
         encoding: "utf8",

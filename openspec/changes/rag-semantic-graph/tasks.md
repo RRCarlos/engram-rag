@@ -39,12 +39,12 @@ Chain strategy: stacked-to-main
 
 ## PR 2: GraphIndex + HybridRetriever (RRF)
 
-- [ ] 2.1 RED: add `test/rag/graphIndex/extract.test.ts` (regex dedup, sort, determinism) and `traverse.test.ts` (1-hop, edge cap = 8).
-- [ ] 2.2 GREEN: implement `src/rag/graphIndex/extract.ts`, `src/rag/graphIndex/store.ts`, `src/rag/graphIndex/traverse.ts`.
-- [ ] 2.3 RED: add `test/rag/hybridRetriever.test.ts` covering RRF `k=60` (table-driven) and graceful absence of one signal.
-- [ ] 2.4 GREEN: implement `src/rag/hybridRetriever.ts` with `retrieveHybrid({ mode })` dispatch and optional `signals` block.
-- [ ] 2.5 Extend `test/rag/retrieverPipeline.test.ts` with `mode: "hybrid"` asserting citation fields and `signals.fused`.
-- [ ] 2.6 REFACTOR: hoist RRF helper to `src/rag/rrf.ts`; ensure `npm test` and `npx tsc --noEmit` stay green.
+- [x] 2.1 RED: add `test/rag/graphIndex/extract.test.ts` (regex dedup, sort, determinism) and `traverse.test.ts` (1-hop, edge cap = 8).
+- [x] 2.2 GREEN: implement `src/rag/graphIndex/extract.ts`, `src/rag/graphIndex/store.ts`, `src/rag/graphIndex/traverse.ts`.
+- [x] 2.3 RED: add `test/rag/hybridRetriever.test.ts` covering RRF `k=60` (table-driven) and graceful absence of one signal.
+- [x] 2.4 GREEN: implement `src/rag/hybridRetriever.ts` with `retrieveHybrid({ mode })` dispatch and optional `signals` block.
+- [x] 2.5 Extend `test/rag/retrieverPipeline.test.ts` with `mode: "hybrid"` asserting citation fields and `signals.fused`.
+- [x] 2.6 REFACTOR: hoist RRF helper to `src/rag/rrf.ts`; ensure `npm test` and `npx tsc --noEmit` stay green.
 
 ## PR 3: CLI + Eval + Close-out
 

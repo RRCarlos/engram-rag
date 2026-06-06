@@ -8,3 +8,6 @@ coverage/
 .atl/
 .rag/
 .engram/
+reports/**/*
+!reports/**/
+!reports/**/.gitkeep

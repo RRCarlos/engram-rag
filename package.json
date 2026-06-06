@@ -13,7 +13,8 @@
     "verify:phase1": "node --import tsx src/cli/verifyPhase1.ts",
     "verify:phase2": "node --import tsx src/cli/verifyPhase2.ts",
     "verify:phase3": "node --import tsx src/cli/verifyPhase3.ts",
-    "verify:phase4": "node --import tsx src/cli/verifyPhase4.ts"
+    "verify:phase4": "node --import tsx src/cli/verifyPhase4.ts",
+    "mcp": "node --import tsx src/mcp/ragServer.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
@@ -22,6 +23,7 @@
     "vitest": "^1.6.0"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.23.0"
   }
 }

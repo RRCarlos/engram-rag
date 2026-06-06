@@ -131,9 +131,9 @@
 
 - **Branch**: `feat/rag-semantic-pr3` (stacked on PR 2, same base `chore/archive-kag-rag-functional`)
 - **Base branch**: `chore/archive-kag-rag-functional` (chain base)
-- **Commit SHA**: (filled in after commit)
-- **Push URL**: (filled in after push)
-- **PR URL**: (filled in after `gh pr create`)
+- **Commit SHA**: `b30c2a3`
+- **Push URL**: `https://github.com/RRCarlos/engram-rag/tree/feat/rag-semantic-pr3`
+- **PR URL**: `https://github.com/RRCarlos/engram-rag/pull/24`
 - **Test/Typecheck**: 49 files / 597 passed (1 skipped); `npx tsc --noEmit` clean; `npm run test:verify` 4 files / 12 passed; CLI smoke `node --import tsx src/cli/ragQuery.ts --query "stable citations" --top-k 2 --mode hybrid --embedder default` returns valid JSON with `signals.fused.score === result.score`
 - **Diff**: 5 files modified, 1 directory created (4 test/source files + tasks.md + apply-progress.md; `eval/rag-scenarios/hybrid.json` is the new artifact)
 

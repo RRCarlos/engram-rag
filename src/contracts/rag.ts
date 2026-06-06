@@ -41,12 +41,39 @@ export const DocumentChunkSchema = z
   })
   .strict();
 
+export const EmbedderIdSchema = z
+  .union([z.literal("hashing"), z.string().min(1, "embedder id must be non-empty")])
+  .describe("Stable embedder identifier accepted by the registry.");
+
+export const RetrievalModeSchema = z
+  .enum(["lexical", "semantic", "graph", "hybrid"])
+  .describe("Retrieval ranking mode.");
+
+export const RagSignalScoreSchema = z
+  .object({
+    chunk_id: z.string().min(1, "chunk_id is required"),
+    rank: z.number().int().nonnegative("rank must be non-negative"),
+    score: z.number().nonnegative("score must be non-negative"),
+  })
+  .strict();
+
+export const RagSignalsSchema = z
+  .object({
+    lexical: z.array(RagSignalScoreSchema).optional(),
+    semantic: z.array(RagSignalScoreSchema).optional(),
+    graph: z.array(RagSignalScoreSchema).optional(),
+    fused: z.array(RagSignalScoreSchema).optional(),
+  })
+  .strict()
+  .describe("Per-mode signal breakdown for a hybrid retrieval.");
+
 export const RagRetrievalResultSchema = z
   .object({
     chunk_id: z.string().min(1, "chunk_id is required"),
-    score: z.number().positive(),
+    score: z.number().nonnegative(),
     snippet: z.string().min(1, "snippet is required"),
     citation: CitationSchema,
+    signals: RagSignalsSchema.optional(),
   })
   .strict();
 
@@ -62,8 +89,12 @@ export type RagDocument = z.infer<typeof RagDocumentSchema>;
 export type RagQuery = z.infer<typeof RagQuerySchema>;
 export type Citation = z.infer<typeof CitationSchema>;
 export type DocumentChunk = z.infer<typeof DocumentChunkSchema>;
+export type RagSignalScore = z.infer<typeof RagSignalScoreSchema>;
+export type RagSignals = z.infer<typeof RagSignalsSchema>;
 export type RagRetrievalResult = z.infer<typeof RagRetrievalResultSchema>;
 export type RagRetrievalResponse = z.infer<typeof RagRetrievalResponseSchema>;
+export type EmbedderId = z.infer<typeof EmbedderIdSchema>;
+export type RetrievalMode = z.infer<typeof RetrievalModeSchema>;
 
 function formatZodError(error: z.ZodError): string {
   return error.issues

@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   DocumentChunkSchema,
+  EmbedderIdSchema,
   RagDocumentSchema,
   RagQuerySchema,
   RagRetrievalResponseSchema,
+  RagSignalScoreSchema,
+  RagSignalsSchema,
+  RetrievalModeSchema,
   parseRagQuery,
   safeParseRagDocument,
   safeParseRagRetrievalResponse,
@@ -99,5 +103,96 @@ describe("rag contracts", () => {
     if (!result.ok) {
       expect(result.error).toMatch(/score|snippet|citation/);
     }
+  });
+});
+
+describe("rag contracts - new schemas", () => {
+  it("EmbedderIdSchema accepts the hashing literal", () => {
+    expect(EmbedderIdSchema.parse("hashing")).toBe("hashing");
+  });
+
+  it("EmbedderIdSchema accepts any non-empty custom id", () => {
+    expect(EmbedderIdSchema.parse("custom-embedder-v1")).toBe("custom-embedder-v1");
+  });
+
+  it("EmbedderIdSchema rejects empty id", () => {
+    expect(EmbedderIdSchema.safeParse("").success).toBe(false);
+  });
+
+  it("RetrievalModeSchema accepts the four supported modes", () => {
+    for (const mode of ["lexical", "semantic", "graph", "hybrid"] as const) {
+      expect(RetrievalModeSchema.parse(mode)).toBe(mode);
+    }
+  });
+
+  it("RetrievalModeSchema rejects unknown modes", () => {
+    expect(RetrievalModeSchema.safeParse("nonsense").success).toBe(false);
+  });
+
+  it("RagSignalScoreSchema validates chunk_id, rank, score and rejects extras", () => {
+    const valid = RagSignalScoreSchema.parse({
+      chunk_id: "doc-alpha#chunk-0001",
+      rank: 0,
+      score: 1.5,
+    });
+    expect(valid.rank).toBe(0);
+
+    const strict = RagSignalScoreSchema.safeParse({
+      chunk_id: "x",
+      rank: 0,
+      score: 1,
+      extra: "no",
+    });
+    expect(strict.success).toBe(false);
+  });
+
+  it("RagSignalsSchema accepts all four optional sub-arrays", () => {
+    const payload = {
+      lexical: [{ chunk_id: "a", rank: 0, score: 1 }],
+      semantic: [{ chunk_id: "a", rank: 0, score: 0.9 }],
+      graph: [{ chunk_id: "a", rank: 0, score: 0.5 }],
+      fused: [{ chunk_id: "a", rank: 0, score: 0.85 }],
+    };
+    const parsed = RagSignalsSchema.parse(payload);
+    expect(parsed.lexical?.[0]?.chunk_id).toBe("a");
+  });
+
+  it("RagSignalsSchema accepts an empty object (all signals optional)", () => {
+    expect(RagSignalsSchema.parse({}).lexical).toBeUndefined();
+  });
+
+  it("RagRetrievalResponseSchema accepts an optional signals block on results", () => {
+    const response = RagRetrievalResponseSchema.parse({
+      query: "stable citations",
+      top_k: 1,
+      results: [
+        {
+          chunk_id: validChunk.id,
+          score: 1,
+          snippet: "Alpha retrieval uses stable citations for every chunk.",
+          citation: validChunk.citation,
+          signals: {
+            semantic: [{ chunk_id: validChunk.id, rank: 0, score: 0.9 }],
+          },
+        },
+      ],
+    });
+    expect(response.results[0]?.signals?.semantic?.[0]?.score).toBe(0.9);
+  });
+
+  it("RagRetrievalResponseSchema still accepts results without a signals block (backward compat)", () => {
+    const response = RagRetrievalResponseSchema.parse({
+      query: "stable citations",
+      top_k: 1,
+      results: [
+        {
+          chunk_id: validChunk.id,
+          score: 1,
+          snippet: "Alpha retrieval uses stable citations for every chunk.",
+          citation: validChunk.citation,
+        },
+      ],
+    });
+    expect(response.results[0]?.signals).toBeUndefined();
   });
 });

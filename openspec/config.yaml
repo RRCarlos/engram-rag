@@ -1,0 +1,82 @@
+schema: spec-driven
+
+project: engram-rag
+persistence:
+  mode: openspec
+  initialized: 2026-06-06
+
+context: |
+  Tech stack: TypeScript ES modules on Node.js 24, using tsx for CLI execution.
+  Architecture: contract-first retrieval/preflight system with Zod schemas, pure retrieval planning, CLI verification scripts, and phase acceptance docs.
+  Testing: Vitest node environment with test files under test/**/*.test.ts; CI runs npm test plus phase verify scripts.
+  Style: strict TypeScript with noUncheckedIndexedAccess, exactOptionalPropertyTypes, isolatedModules, and mirrored src/test layout.
+  Constraints: v1 rag-system artifacts are historical/read-only; active work should avoid legacy topic-key aliases.
+
+strict_tdd: true
+
+testing:
+  detected: 2026-06-06
+  strict_tdd: true
+  runner:
+    framework: Vitest
+    command: npm test
+    config: vitest.config.ts
+  layers:
+    unit:
+      available: true
+      tool: Vitest
+    integration:
+      available: true
+      tool: Vitest with fake/live Engram adapter and CLI boundary tests
+    e2e:
+      available: false
+      tool: null
+  coverage:
+    available: false
+    command: null
+  quality:
+    linter:
+      available: false
+      command: null
+    type_checker:
+      available: true
+      command: npx tsc --noEmit
+    formatter:
+      available: false
+      command: null
+  verify_commands:
+    - npm run test:verify
+    - npm run verify:phase1
+    - npm run verify:phase2
+    - npm run verify:phase3
+    - npm run verify:phase4
+
+rules:
+  proposal:
+    - Include problem statement, scope, non-goals, acceptance evidence, and rollback plan for risky changes.
+    - Respect the 400-line review budget; forecast chained PRs when a change likely exceeds it.
+  specs:
+    - Use RFC 2119 keywords for requirements.
+    - Use Given/When/Then scenarios for behavior and acceptance gates.
+    - Keep delta specs under openspec/changes/{change-name}/specs/{domain}/spec.md.
+  design:
+    - Document architectural decisions with rationale and tradeoffs.
+    - Preserve the contract-first boundary between schemas, retrieval logic, adapters, and CLI surfaces.
+  tasks:
+    - Group tasks by reviewable work unit and keep tests/docs with the behavior they verify.
+    - Surface chained PR recommendations when estimated changed lines exceed 400.
+  apply:
+    tdd: true
+    test_command: npm test
+    instructions:
+      - Follow existing TypeScript strictness and mirrored test layout.
+      - Do not modify historical v1 rag-system artifacts unless the change explicitly targets archival docs.
+  verify:
+    test_command: npm test
+    build_command: npx tsc --noEmit
+    coverage_threshold: 0
+    instructions:
+      - Run relevant phase verify scripts when a change touches phase contracts or acceptance docs.
+  archive:
+    - Move completed changes to openspec/changes/archive/YYYY-MM-DD-{change-name}/.
+    - Warn before merging destructive or behavior-removing deltas into main specs.

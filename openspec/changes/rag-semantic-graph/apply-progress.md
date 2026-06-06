@@ -1,11 +1,12 @@
-# Apply Progress: rag-semantic-graph (PR 1 + PR 2)
+# Apply Progress: rag-semantic-graph (PR 1 + PR 2 + PR 3)
 
 **Branch (PR 1):** `feat/rag-semantic-pr1`
 **Branch (PR 2):** `feat/rag-semantic-pr2` (stacked on PR 1, same base `chore/archive-kag-rag-functional`)
-**Chain strategy:** `stacked-to-main` (PR 2 of 3)
+**Branch (PR 3):** `feat/rag-semantic-pr3` (stacked on PR 2, same base `chore/archive-kag-rag-functional`)
+**Chain strategy:** `stacked-to-main` (PR 3 of 3)
 **Mode:** Strict TDD
 **Started (PR 1):** 2026-06-06
-**PR 2 status:** GREEN — `npm test` clean (49 files / 586 passed / 1 skipped), `npx tsc --noEmit` clean
+**PR 3 status:** GREEN — `npm test` clean (49 files / 597 passed / 1 skipped), `npx tsc --noEmit` clean, `npm run test:verify` 4 files / 12 passed, CLI smoke test returns valid `RagRetrievalResponse` JSON with `signals.fused.score === result.score`
 
 ## TDD Cycle Evidence (PR 1)
 
@@ -33,6 +34,23 @@
 | 2.4 GREEN: implement hybridRetriever with mode dispatch | (covered by 2.3) | src/rag/hybridRetriever.ts | toRagSignal/toRagSignals helpers hoist repeated literal mapping | DONE |
 | 2.5 Extend retrieverPipeline with `mode: "hybrid"` + citation + `signals.fused` | test/rag/retrieverPipeline.test.ts (+1 test) | n/a (extends) | n/a | DONE |
 | 2.6 REFACTOR: hoist RRF helper to `src/rag/rrf.ts` | n/a | src/rag/rrf.ts (DEFAULT_RRF_K=60, fuseRankings, toRagSignalScores) | full suite + tsc clean | DONE |
+
+## TDD Cycle Evidence (PR 3)
+
+| Task | RED test | GREEN impl | REFACTOR | Status |
+|------|----------|------------|----------|--------|
+| 3.1 RED: extend `test/cli/ragQuery.test.ts` with `--mode` and `--embedder` cases (subprocess). | test/cli/ragQuery.test.ts (8 new tests: default-lexical, explicit lexical, hybrid, semantic, graph, embedder=hashing, mode=bogus, embedder=unregistered) | n/a (red) | n/a | DONE |
+| 3.2 GREEN: `src/cli/ragQuery.ts` accepts `--mode` and `--embedder`; default `mode=lexical`; emits `signals` only when non-lexical. | (covered by 3.1) | src/cli/ragQuery.ts (FLAG_SPECS table + readFlagValue/parseString/parseNumber helpers, dispatchRetrieval with mode-aware index build, resolveCliEmbedder with `default` sentinel) | table-driven `parseArgs` unifies the 5 flag parsers; `validateOptions` returns typed `mode: RetrievalMode` (no `as` cast in the dispatcher) | DONE |
+| 3.3 RED: hybrid recall/citation cases in `test/rag/ragEval.test.ts` + `eval/rag-scenarios/hybrid.json`. | test/rag/ragEval.test.ts (3 new tests: hybrid recall+citation, single-scenario fused, lexical `fused_score=null` triangulation) + eval/rag-scenarios/hybrid.json (3 scenarios) | n/a (red) | n/a | DONE |
+| 3.4 GREEN: implement hybrid eval dispatch in `src/rag/ragEval.ts`; assert fused `score` equals top-level `score`. | (covered by 3.3) | src/rag/ragEval.ts (mode dispatch with `RagEvalScenario.mode?` and `RagEvalOptions { embedder, prebuiltEntries, prebuiltGraph, graphDictionary, corpusHash, defaultMode }`; `RagEvalResult.mode` + `RagEvalResult.scores[]`; `loadRagEvalScenarios` JSON loader) | extracts `extractFusedScore`, `runScenario`, `loadRagEvalScenarios` helpers; non-lexical mode throws if `embedder` missing | DONE |
+| 3.5 REFACTOR: unify CLI option parsing helper; run full `npm test` + `npx tsc --noEmit`; confirm kag-rag slice remains green. | n/a | (table-driven `parseArgs` + `readFlagValue`) | 49 files / 597 passed (1 skipped) — was 586 in PR 2 baseline (+11 new tests); `npx tsc --noEmit` clean; `npm run test:verify` 4 files / 12 passed; CLI smoke test (hybrid + default) returns valid `RagRetrievalResponse` JSON with `signals.fused.score === result.score` (0.05 / 0.03278688524590164). | DONE |
+
+### PR 3 Test Summary
+- **Total tests written**: 11 new tests (8 CLI + 3 eval)
+- **Total tests passing**: 597 (was 586 baseline; +11)
+- **Layers used**: Integration/CLI subprocess (8) + Unit (3)
+- **Pure functions created**: `extractFusedScore`, `runScenario`, `loadRagEvalScenarios`, `readFlagValue`, `parseString`, `parseNumber`, `resolveCliEmbedder`
+- **CLI smoke test (real binary)**: `node --import tsx src/cli/ragQuery.ts --query "stable citations" --top-k 2 --mode hybrid --embedder default` → exit 0, valid JSON, top-level `score` matches `signals.fused[0].score` for every result
 
 ## Files Changed (PR 1)
 
@@ -105,15 +123,43 @@
 
 - **Branch**: `feat/rag-semantic-pr2` (stacked on PR 1, same base `chore/archive-kag-rag-functional`)
 - **Base branch**: `chore/archive-kag-rag-functional` (chain base)
-- **Commit SHA**: (filled in after commit)
-- **Push URL**: (filled in after push)
-- **PR URL**: (filled in after `gh pr create`)
+- **Commit SHA**: `54ba2c9`
 - **Test/Typecheck**: 49 files / 586 passed (1 skipped); `npx tsc --noEmit` clean
 - **Diff**: 10 files / +816 / -8
 
+### PR 3
+
+- **Branch**: `feat/rag-semantic-pr3` (stacked on PR 2, same base `chore/archive-kag-rag-functional`)
+- **Base branch**: `chore/archive-kag-rag-functional` (chain base)
+- **Commit SHA**: (filled in after commit)
+- **Push URL**: (filled in after push)
+- **PR URL**: (filled in after `gh pr create`)
+- **Test/Typecheck**: 49 files / 597 passed (1 skipped); `npx tsc --noEmit` clean; `npm run test:verify` 4 files / 12 passed; CLI smoke `node --import tsx src/cli/ragQuery.ts --query "stable citations" --top-k 2 --mode hybrid --embedder default` returns valid JSON with `signals.fused.score === result.score`
+- **Diff**: 5 files modified, 1 directory created (4 test/source files + tasks.md + apply-progress.md; `eval/rag-scenarios/hybrid.json` is the new artifact)
+
+## Files Changed (PR 3)
+
+| File | Action | Notes |
+|------|--------|-------|
+| `src/cli/ragQuery.ts` | Modified | New `FLAG_SPECS` table unifies 5 flag parsers (`--query`, `--top-k`, `--corpus-dir`, `--mode`, `--embedder`); `readFlagValue` + `parseString`/`parseNumber` helpers; `validateOptions` now returns `{ mode: RetrievalMode }` (no `as` cast at dispatch); `dispatchRetrieval` builds in-memory vector + graph indices for non-lexical modes; `resolveCliEmbedder` resolves `default` → `hashingEmbedder` or registry lookup; stderr validation for unknown `--mode` and unregistered `--embedder`. |
+| `src/rag/ragEval.ts` | Modified | `RagEvalScenario.mode?` (defaults to `"lexical"`); `RagEvalOptions` with `embedder`, `prebuiltEntries`, `prebuiltGraph`, `graphDictionary`, `corpusHash`, `defaultMode`; `RagEvalResult` gains `mode` and `scores: RagEvalScenarioScore[]`; `loadRagEvalScenarios(path)` JSON loader; `extractFusedScore` / `runScenario` helpers; non-lexical mode throws if `embedder` is missing. |
+| `test/cli/ragQuery.test.ts` | Modified | +8 new subprocess tests: default-lexical emits no signals, explicit `--mode lexical` matches legacy baseline, `--mode hybrid` matches `retrieveHybrid()` and exposes `signals.fused` per result, `--mode semantic` exposes `signals.semantic`, `--mode graph` exposes `signals.graph`, `--embedder hashing` resolves the registered embedder, unknown `--mode` → stderr, unregistered `--embedder` → stderr. |
+| `test/rag/ragEval.test.ts` | Modified | +3 new tests: hybrid scenario file (3 scenarios from `eval/rag-scenarios/hybrid.json`) passes recall + citation + `signals.fused.score === score` triangulation; single hybrid scenario run surfaces fused scores; lexical baseline reports `mode='lexical'` and `fused_score=null` per chunk. |
+| `eval/rag-scenarios/hybrid.json` | Created | 3 hybrid scenarios (`hybrid-stable-citations-alpha`, `hybrid-deterministic-metadata-beta`, `hybrid-citation-graph-routing`) targeting the fixture corpus. |
+| `openspec/changes/rag-semantic-graph/tasks.md` | Modified | PR 3 tasks marked `[x]`. |
+| `openspec/changes/rag-semantic-graph/apply-progress.md` | Modified | This file. |
+
+## Deviations from Design / Spec (PR 3)
+
+1. **Default `embedder` CLI value is `"default"` (a sentinel)**, not the literal `"hashing"`. The CLI maps `default` → `hashingEmbedder` via `resolveCliEmbedder`. This lets future PRs swap the default embedder (e.g. to a transformer adapter) without changing the CLI surface; the registry still keeps `hashing` as the registered id. The `--embedder hashing` test case confirms the explicit-id path stays intact.
+2. **Non-lexical CLI dispatch always builds BOTH a vector index and a graph index in-memory.** For `mode === "semantic"` the graph is unused; for `mode === "graph"` the vector is unused. Building both is cheap (3 fixture chunks, hashing embedder) and keeps the dispatch branch count flat. A future optimization could lazy-build per mode.
+3. **`RagEvalOptions.defaultMode` is added as a scenario-level override** in addition to the per-scenario `mode` field. This lets a JSON scenario file omit `mode` from every entry and let the caller pick a baseline mode for the batch. The per-scenario `mode` always wins.
+4. **`RagEvalScenarioScore.fused_score` is `null` for non-hybrid modes** rather than omitted. This keeps the shape stable across modes and lets callers branch on `null` vs. `number` without optional chaining. The new "lexical scenarios report `fused_score=null` per chunk" test pins this contract.
+5. **PR base = `chore/archive-kag-rag-functional`** (same deviation as PR 1 and PR 2). Stacked branch `feat/rag-semantic-pr3` is based on `feat/rag-semantic-pr2`, which is based on `feat/rag-semantic-pr1`, which is based on the archive branch. The three-PR stack keeps the diff focused on PR 3 scope (5 files modified + 1 new directory) instead of mixing PR 1 + PR 2 + PR 3 into a 36-file monster.
+
 ## Next Action
 
-PR 3 — CLI flags (`--mode lexical|semantic|graph|hybrid`, `--embedder hashing|<id>`) + hybrid eval scenarios + close-out. Branch off PR 2 (`feat/rag-semantic-pr2`) and target the same base (`chore/archive-kag-rag-functional`) per the same `stacked-to-main` chain strategy.
+Hand off to `sdd-verify` (run full acceptance gate against the three-PR stack) → `sdd-archive` (sync delta specs into the main `rag-document-retrieval` capability spec).
 
 ## Files Changed (PR 1)
 

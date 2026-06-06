@@ -48,8 +48,8 @@ Chain strategy: stacked-to-main
 
 ## PR 3: CLI + Eval + Close-out
 
-- [ ] 3.1 RED: extend `test/cli/ragQuery.test.ts` with `--mode lexical|semantic|graph|hybrid` and `--embedder hashing|<id>` cases (subprocess).
-- [ ] 3.2 GREEN: update `src/cli/ragQuery.ts` to accept the new flags; default `mode = lexical`; emit `signals` only when non-lexical.
-- [ ] 3.3 RED: add `test/rag/ragEval.test.ts` cases for hybrid recall/citation; add `eval/rag-scenarios/hybrid.json`.
-- [ ] 3.4 GREEN: implement `test/rag/ragEval.test.ts` and `eval/rag-scenarios/hybrid.json`; assert fused `score` equals top-level `score`.
-- [ ] 3.5 REFACTOR: unify CLI option parsing helper; run full `npm test` and `npx tsc --noEmit`; confirm archived kag-rag slice remains green.
+- [x] 3.1 RED: extend `test/cli/ragQuery.test.ts` with `--mode lexical|semantic|graph|hybrid` and `--embedder hashing|<id>` cases (subprocess).
+- [x] 3.2 GREEN: update `src/cli/ragQuery.ts` to accept the new flags; default `mode = lexical`; emit `signals` only when non-lexical.
+- [x] 3.3 RED: add `test/rag/ragEval.test.ts` cases for hybrid recall/citation; add `eval/rag-scenarios/hybrid.json`.
+- [x] 3.4 GREEN: implement `test/rag/ragEval.test.ts` and `eval/rag-scenarios/hybrid.json`; assert fused `score` equals top-level `score`.
+- [x] 3.5 REFACTOR: unify CLI option parsing helper; run full `npm test` and `npx tsc --noEmit`; confirm archived kag-rag slice remains green.

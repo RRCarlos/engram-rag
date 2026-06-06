@@ -19,6 +19,9 @@ const ALLOWED_EXCEPTIONS = new Set<string>([
   // it is not vacuous. No production/test helper should be added here
   // without a written justification in the task file.
   "test/guardrails/noLiveMcpInTests.test.ts",
+  // The MCP server is the legitimate integration point for the engram-rag
+  // MCP server; it requires the real SDK to function.
+  "src/mcp/ragServer.ts",
 ]);
 
 const FORBIDDEN_PATTERNS: RegExp[] = [

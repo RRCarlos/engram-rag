@@ -1,0 +1,27 @@
+[
+  {
+    "id": "hybrid-stable-citations-alpha",
+    "query": "stable citations",
+    "top_k": 2,
+    "expected_chunk_ids": ["doc-alpha#chunk-0001"],
+    "mode": "hybrid"
+  },
+  {
+    "id": "hybrid-deterministic-metadata-beta",
+    "query": "deterministic source metadata",
+    "top_k": 2,
+    "expected_chunk_ids": ["doc-beta#chunk-0001"],
+    "mode": "hybrid"
+  },
+  {
+    "id": "hybrid-citation-graph-routing",
+    "query": "ranking",
+    "top_k": 3,
+    "expected_chunk_ids": [
+      "doc-alpha#chunk-0001",
+      "doc-beta#chunk-0001",
+      "doc-gamma#chunk-0001"
+    ],
+    "mode": "hybrid"
+  }
+]

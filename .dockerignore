@@ -1,0 +1,7 @@
+node_modules
+.git
+.pytest_cache
+reports/**/*.tmp
+npm-debug.log
+Dockerfile
+docker-compose.yml

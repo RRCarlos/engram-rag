@@ -1,66 +1,53 @@
-# 🧠 Engram RAG Dashboard
+# Engram RAG Dashboard
 
-Dashboard minimalista, funcional y con personalidad para monitorear el sistema **Engram RAG for Agent Improvement**.
+Dashboard operativo para verificar si Engram RAG esta funcionando con datos reales.
 
-## ✨ Características
+## Que muestra
 
-- **Dark Mode Elegante**: Fondo dark con acentos cyan/purple
-- **Tipografía Moderna**: Inter (texto) + Roboto Mono (código)
-- **Iconos**: Emojis y Unicode para una experiencia visual rica
-- **Animaciones**: Fade-in, hover effects, pulse en el botón de actualizar
-- **Grid de Tarjetas**: Layout responsive con sombras y bordes redondeados
-- **Datos en Tiempo Real (Simulado)**: Conexión con Engram RAG
+- Estado de la API local (`/api/health`).
+- Estadisticas reales del corpus (`/api/stats`).
+- Consultas reales contra RAG lexical, semantic, graph o hybrid (`/api/query`).
+- Resultado de evaluaciones RAG (`/api/eval`).
+- Reportes historicos de verificacion (`/api/events`).
+- Fallos activos detectados por escenarios de evaluacion.
 
-## 📊 Secciones del Dashboard
+Importante: el dashboard no promete que el agente "arregla solo". Lo que si muestra es si los escenarios fallan, si luego pasan, y que reportes de verificacion existen. Esa diferencia importa: detectar y verificar es medible; "arreglar" requiere una accion de codigo o agente por fuera del dashboard.
 
-1. **Total Observaciones**: Contador grande con el total de observaciones en Engram
-2. **Por Agente**: Gráfico de barras horizontal mostrando observaciones por agente SDD
-3. **Topic Keys**: Badges con los topic keys activos
-4. **Timeline**: Últimas observaciones con título, tipo y fecha
+## Uso local
 
-## 🚀 Cómo Usar
+Desde la raiz del proyecto:
 
-1. Abre `index.html` en tu navegador (doble clic o arrastra al navegador)
-2. Verás las tarjetas con datos hardcodeados iniciales
-3. Haz clic en "🔄 Actualizar Datos" para simular una carga desde Engram
-4. El botón mostrará una animación de carga y luego actualizará con nuevos datos
-
-## 🎨 Personalización
-
-### Cambiar Colores
-Edita las variables en `style.css`:
-```css
-:root {
-  --accent-cyan: #00d4ff;
-  --accent-purple: #9b59b6;
-  /* ... más variables */
-}
+```bash
+npm run dashboard
 ```
 
-### Cambiar Datos
-Edita el objeto `engramData` en `app.js`:
-```javascript
-const engramData = {
-  totalObservations: 8,
-  byAgent: { /* ... */ },
-  // ...
-};
+Abrir:
+
+```text
+http://localhost:8787
 ```
 
-## 📋 Archivos
+## Docker Desktop
 
-- `index.html` - Estructura principal
-- `style.css` - Estilos dark mode con animaciones
-- `app.js` - Lógica y datos (hardcodeados)
-- `README.md` - Este archivo
+Desde la raiz del proyecto:
 
-## 🔮 Futuro
+```bash
+docker compose up --build
+```
 
-- [ ] Conectar con API real de Engram cuando esté disponible
-- [ ] Gráficos interactivos (Chart.js o D3.js)
-- [ ] Filtros por agente, tipo, fecha
-- [ ] Modo claro/oscuro toggle
+Abrir:
 
----
+```text
+http://localhost:8787
+```
 
-**Creado con ❤️ y estilo no soso para Carlos** 🚀
+## Cloud / InsForge
+
+El proyecto queda listo para cualquier plataforma que acepte contenedores Docker:
+
+- Build command: `docker build -t engram-rag-dashboard .`
+- Start command: `npm run dashboard`
+- Port: `8787`
+- Health endpoint: `/api/health`
+
+Si la plataforma usa `PORT` dinamico, el servidor lo respeta mediante la variable de entorno `PORT`.

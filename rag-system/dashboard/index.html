@@ -3,80 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🧠 Engram RAG Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Engram RAG Dashboard</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Header con Personalidad -->
-    <header class="header fade-in">
-      <div class="header-content">
-        <h1>🧠 Engram RAG Dashboard</h1>
-        <p class="subtitle">Minimalista · Funcional · Con Personalidad</p>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Engram RAG Control Room</p>
+        <h1>Dashboard conectado al RAG real</h1>
+        <p class="subtitle">Estado, consultas, evaluaciones y reportes de verificacion en una sola pantalla.</p>
       </div>
-      <div class="status-badge">
-        <span class="status-dot"></span>
-        <span id="status-text">Conectado a Engram RAG (simulado)</span>
+      <div class="status-card" id="health-card">
+        <span class="status-dot status-warn" id="status-dot"></span>
+        <strong id="status-label">Conectando...</strong>
+        <small id="status-detail">Esperando API local</small>
       </div>
     </header>
 
-    <!-- Grid de Tarjetas -->
-    <div class="grid">
-      <!-- Tarjeta 1: Total Observaciones -->
-      <div class="card fade-in" style="--delay: 0.1s">
-        <div class="card-icon">📊</div>
-        <div class="card-content">
-          <h2 class="card-title">Total Observaciones</h2>
-          <p class="card-number" id="total-obs">0</p>
-          <p class="card-subtitle">En project: engram-rag</p>
+    <section class="metrics-grid" aria-label="Metricas principales">
+      <article class="metric-card">
+        <span>Documentos</span>
+        <strong id="documents-count">-</strong>
+        <small id="corpus-path">Corpus no cargado</small>
+      </article>
+      <article class="metric-card">
+        <span>Chunks</span>
+        <strong id="chunks-count">-</strong>
+        <small id="corpus-hash">Hash pendiente</small>
+      </article>
+      <article class="metric-card">
+        <span>Eval RAG</span>
+        <strong id="eval-score">-</strong>
+        <small id="eval-detail">Sin corrida</small>
+      </article>
+      <article class="metric-card">
+        <span>Reportes</span>
+        <strong id="events-count">-</strong>
+        <small>Verificacion historica</small>
+      </article>
+    </section>
+
+    <section class="panel split">
+      <div>
+        <div class="section-heading">
+          <h2>Consulta RAG</h2>
+          <p>Ejecuta una busqueda real contra el corpus cargado.</p>
         </div>
+        <form id="query-form" class="query-form">
+          <label>
+            Query
+            <input id="query-input" name="query" value="retrieval citations" autocomplete="off">
+          </label>
+          <label>
+            Modo
+            <select id="mode-input" name="mode">
+              <option value="hybrid">hybrid</option>
+              <option value="lexical">lexical</option>
+              <option value="semantic">semantic</option>
+              <option value="graph">graph</option>
+            </select>
+          </label>
+          <button type="submit">Consultar</button>
+        </form>
       </div>
+      <div class="results" id="query-results">
+        <p class="empty">Todavia no hay resultados.</p>
+      </div>
+    </section>
 
-      <!-- Tarjeta 2: Por Agente -->
-      <div class="card fade-in" style="--delay: 0.2s">
-        <div class="card-icon">🤖</div>
-        <div class="card-content">
-          <h2 class="card-title">Observaciones por Agente</h2>
-          <div class="bar-chart" id="agent-chart"></div>
+    <section class="grid-two">
+      <article class="panel">
+        <div class="section-heading">
+          <h2>Errores detectados</h2>
+          <p>Sale de los escenarios de evaluacion. Si falla, aparece aca.</p>
         </div>
-      </div>
+        <div id="failures-list" class="stack"></div>
+      </article>
 
-      <!-- Tarjeta 3: Topic Keys -->
-      <div class="card fade-in" style="--delay: 0.3s">
-        <div class="card-icon">🏷️</div>
-        <div class="card-content">
-          <h2 class="card-title">Topic Keys Activos</h2>
-          <div class="topics-list" id="topics-list"></div>
+      <article class="panel">
+        <div class="section-heading">
+          <h2>Arreglos / verificaciones</h2>
+          <p>Reportes generados por fases y verificaciones.</p>
         </div>
-      </div>
+        <div id="events-list" class="stack"></div>
+      </article>
+    </section>
 
-      <!-- Tarjeta 4: Últimas Observaciones -->
-      <div class="card fade-in" style="--delay: 0.4s">
-        <div class="card-icon">⚡</div>
-        <div class="card-content">
-          <h2 class="card-title">Últimas Observaciones</h2>
-          <div class="timeline" id="timeline"></div>
+    <section class="panel">
+      <div class="section-heading row">
+        <div>
+          <h2>Diagnostico crudo</h2>
+          <p>JSON real devuelto por la API. Si esto carga, el dashboard no esta mintiendo.</p>
         </div>
+        <button id="refresh-button" type="button">Actualizar</button>
       </div>
-    </div>
-
-    <!-- Botón Actualizar -->
-    <div class="action-bar fade-in" style="--delay: 0.5s">
-      <button class="btn-refresh" id="btn-refresh" onclick="refreshData()">
-        <span class="btn-icon">🔄</span>
-        <span>Actualizar Datos</span>
-      </button>
-      <p class="hint">Simulación de actualización desde Engram RAG</p>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer fade-in" style="--delay: 0.6s">
-      <p>🚀 Engram RAG for Agent Improvement • Fase 2: Inyección Completada</p>
-    </footer>
-  </div>
+      <pre id="raw-json">{}</pre>
+    </section>
+  </main>
 
   <script src="app.js"></script>
 </body>

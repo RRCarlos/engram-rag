@@ -14,7 +14,8 @@
     "verify:phase2": "node --import tsx src/cli/verifyPhase2.ts",
     "verify:phase3": "node --import tsx src/cli/verifyPhase3.ts",
     "verify:phase4": "node --import tsx src/cli/verifyPhase4.ts",
-    "mcp": "node --import tsx src/mcp/ragServer.ts"
+    "mcp": "node --import tsx src/mcp/ragServer.ts",
+    "dashboard": "node --import tsx src/api/dashboardServer.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

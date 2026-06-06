@@ -1,103 +1,148 @@
-// 🧠 Engram RAG Dashboard - Datos Reales Actualizados (Proyecto: engram-rag)
-
-// Datos reales obtenidos de Engram (2026-05-05) - TOTAL: 7 observaciones
-const engramData = {
-  totalObservations: 7,
-  byAgent: {
-    'sdd-spec': 1,
-    'orchestrator': 2,
-    'sdd-apply': 2,
-    'sdd-verify': 1,
-    'sdd-explore': 1
+const api = {
+  async get(path) {
+    const response = await fetch(path);
+    if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+    return response.json();
   },
-  byTopic: {
-    'sdd/engram-rag-fase-2/proposal': 2,
-    'sdd/engram-rag-fase-2/specs': 1,
-    'sdd/engram-rag-fase-2/implemented': 1,
-    'sdd/engram-rag-fase-2/verified': 1,
-    'sdd/engram-rag-fase-2/dashboard': 1,
-    'discovery/agent-failure-sdd-apply': 1
+  async post(path, body) {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+    return response.json();
   },
-  recentObservations: [
-    { title: 'Fallo simulado: Uso de && en PowerShell', type: 'bugfix', date: '2026-05-05', agent: 'sdd-apply', topic: 'discovery/agent-failure-sdd-apply' },
-    { title: 'Fase 2 Completada + Dashboard Creado', type: 'architecture', date: '2026-05-05', agent: 'orchestrator', topic: 'sdd/engram-rag-fase-2/dashboard' },
-    { title: 'Fase 2 - Auditoría Formal Completada', type: 'architecture', date: '2026-05-05', agent: 'sdd-verify', topic: 'sdd/engram-rag-fase-2/verified' },
-    { title: 'Fase 2 Implementación completada - 5 agentes', type: 'architecture', date: '2026-05-05', agent: 'sdd-apply', topic: 'sdd/engram-rag-fase-2/implemented' },
-    { title: 'Fase 2 Specs completadas - Engram RAG', type: 'architecture', date: '2026-05-05', agent: 'sdd-spec', topic: 'sdd/engram-rag-fase-2/specs' },
-    { title: 'fase-2-proposal', type: 'architecture', date: '2026-05-05', agent: 'orchestrator', topic: 'sdd/engram-rag-fase-2/proposal' },
-    { title: 'Fase 2 Prueba EXITOSA - RAG Check funcionando', type: 'architecture', date: '2026-05-05', agent: 'sdd-explore', topic: 'sdd/engram-rag-fase-2/verified' }
-  ]
 };
 
-// Función para renderizar el dashboard con datos reales
-function renderDashboard(data) {
-  // Actualizar total
-  document.getElementById('total-obs').textContent = data.totalObservations;
+const state = {
+  health: null,
+  stats: null,
+  lastQuery: null,
+};
 
-  // Renderizar gráfico de barras por agente
-  const agentChart = document.getElementById('agent-chart');
-  agentChart.innerHTML = '';
-  const maxValue = Math.max(...Object.values(data.byAgent));  
-  
-  for (const [agent, count] of Object.entries(data.byAgent)) {
-    const percentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
-    agentChart.innerHTML += `
-      <div class="bar-item">
-        <span class="bar-label">${agent}</span>
-        <div class="bar">
-          <div class="bar-fill" style="width: ${percentage}%"></div>
-        </div>
-        <span class="bar-value">${count}</span>
-      </div>
-    `;
-  }
-
-  // Renderizar topics
-  const topicsList = document.getElementById('topics-list');
-  topicsList.innerHTML = '';
-  for (const topic of Object.keys(data.byTopic)) {
-    topicsList.innerHTML += `<span class="topic-badge">${topic}</span>`;
-  }
-
-  // Renderizar timeline (últimas 5)
-  const timeline = document.getElementById('timeline');
-  timeline.innerHTML = '';
-  const recentItems = data.recentObservations.slice(0, 5);
-  for (const obs of recentItems) {
-    timeline.innerHTML += `
-      <div class="timeline-item">
-        <div class="title">${obs.title}</div>
-        <div class="meta">${obs.agent} · ${obs.type} · ${obs.date} · ${obs.topic}</div>
-      </div>
-    `;
-  }
-
-  // Actualizar estado de conexión a "Real"
-  document.getElementById('status-text').textContent = 'Conectado a Engram RAG (Real - 7 observaciones)';
+function text(id, value) {
+  document.getElementById(id).textContent = value;
 }
 
-// Función para simular actualización (Preparado para Fase 3: API Real)
-function refreshData() {
-  const btn = document.getElementById('btn-refresh');
-  const statusText = document.getElementById('status-text');
-  
-  btn.disabled = true;
-  btn.innerHTML = '<span class="btn-icon">⏳</span><span>Actualizando desde Engram...</span>';
-  statusText.textContent = 'Consultando memoria persistente...';
-  
-  // Simulación de latencia de red (En Fase 3: Aquí iría fetch() a la API)
-  setTimeout(() => {
-    renderDashboard(engramData);
-    btn.disabled = false;
-    btn.innerHTML = '<span class="btn-icon">✅</span><span>Datos Reales Cargados (7)</span>';
-    
-    setTimeout(() => {
-      btn.innerHTML = '<span class="btn-icon">🔄</span><span>Actualizar Datos</span>';
-    }, 2000);
-  }, 1500);
+function setHealth(ok, detail) {
+  const dot = document.getElementById("status-dot");
+  dot.className = `status-dot ${ok ? "status-ok" : "status-error"}`;
+  text("status-label", ok ? "API conectada" : "API sin conexion");
+  text("status-detail", detail);
 }
 
-// Inicializar dashboard al cargar
-document.addEventListener('DOMContentLoaded', () => {
-  renderDashboard(engramData);
-});
+function renderStats(stats) {
+  const corpus = stats.corpus;
+  const evalReport = stats.eval?.results ? stats.eval : stats.eval?.report;
+  const total = evalReport?.scenarios_total ?? 0;
+  const passed = evalReport?.scenarios_passed ?? 0;
+  const events = stats.events ?? [];
+
+  text("documents-count", corpus.documents);
+  text("chunks-count", corpus.chunks);
+  text("corpus-path", corpus.directory);
+  text("corpus-hash", `hash ${corpus.hash.slice(0, 12)}`);
+  text("eval-score", total ? `${passed}/${total}` : "0/0");
+  text("eval-detail", total && passed === total ? "Todos los escenarios pasan" : "Hay escenarios para revisar");
+  text("events-count", events.length);
+
+  renderFailures(evalReport?.results ?? []);
+  renderEvents(events);
+  text("raw-json", JSON.stringify(stats, null, 2));
+}
+
+function renderFailures(results) {
+  const container = document.getElementById("failures-list");
+  const failures = results.filter((result) => result.status !== "PASS");
+  if (failures.length === 0) {
+    container.innerHTML = `<div class="notice success">No hay fallos activos en la evaluacion actual.</div>`;
+    return;
+  }
+  container.innerHTML = failures.map((failure) => `
+    <div class="notice danger">
+      <strong>${escapeHtml(failure.id)}</strong>
+      <span>Faltan chunks: ${escapeHtml(failure.missing_chunk_ids.join(", ") || "sin detalle")}</span>
+    </div>
+  `).join("");
+}
+
+function renderEvents(events) {
+  const container = document.getElementById("events-list");
+  if (!events.length) {
+    container.innerHTML = `<div class="notice warn">No se encontraron reportes historicos.</div>`;
+    return;
+  }
+  container.innerHTML = events.slice(0, 8).map((event) => `
+    <div class="event ${event.status === "PASS" ? "event-pass" : "event-check"}">
+      <strong>${escapeHtml(event.phase)} / ${escapeHtml(event.file)}</strong>
+      <span>${escapeHtml(event.status)}${event.summary ? ` · ${escapeHtml(String(event.summary))}` : ""}</span>
+    </div>
+  `).join("");
+}
+
+function renderQueryResults(result) {
+  const container = document.getElementById("query-results");
+  if (!result.results?.length) {
+    container.innerHTML = `<p class="empty">La consulta no devolvio resultados.</p>`;
+    return;
+  }
+  container.innerHTML = result.results.map((item) => `
+    <article class="result-card">
+      <div class="result-topline">
+        <strong>${escapeHtml(item.chunk_id)}</strong>
+        <span>${Number(item.score).toFixed(5)}</span>
+      </div>
+      <p>${escapeHtml(item.snippet)}</p>
+      <small>${escapeHtml(item.citation.title)} · ${escapeHtml(item.citation.source_path)}</small>
+    </article>
+  `).join("");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+async function refresh() {
+  try {
+    const [health, stats] = await Promise.all([
+      api.get("/api/health"),
+      api.get("/api/stats"),
+    ]);
+    state.health = health;
+    state.stats = stats;
+    setHealth(true, `${health.service} · uptime ${health.uptime_seconds}s`);
+    renderStats(stats);
+  } catch (error) {
+    setHealth(false, error.message);
+    text("raw-json", JSON.stringify({ ok: false, error: error.message }, null, 2));
+  }
+}
+
+async function runQuery(event) {
+  event.preventDefault();
+  const query = document.getElementById("query-input").value;
+  const mode = document.getElementById("mode-input").value;
+  const button = event.currentTarget.querySelector("button");
+  button.disabled = true;
+  button.textContent = "Consultando...";
+  try {
+    const result = await api.post("/api/query", { query, mode, top_k: 5 });
+    state.lastQuery = result;
+    renderQueryResults(result);
+  } catch (error) {
+    document.getElementById("query-results").innerHTML = `<div class="notice danger">${escapeHtml(error.message)}</div>`;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Consultar";
+  }
+}
+
+document.getElementById("query-form").addEventListener("submit", runQuery);
+document.getElementById("refresh-button").addEventListener("click", refresh);
+refresh();

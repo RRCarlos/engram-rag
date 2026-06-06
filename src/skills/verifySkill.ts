@@ -58,7 +58,12 @@ export function verifySkill(
     errors.push("RAG block START comment is malformed");
     return { ok: false, errors, warnings };
   }
-  const attrs = startTag[1];
+  // `startTag[1]` is the capture group from the regex; the regex only
+  // matches when a capture group exists, but `noUncheckedIndexedAccess`
+  // widens the read to `string | undefined`. Defaulting to an empty
+  // string lets the downstream `match` calls report "missing tag"
+  // errors uniformly.
+  const attrs = startTag[1] ?? "";
 
   // 3. agent=... tag.
   const agentMatch = attrs.match(/agent=([^\s]+)/);

@@ -84,7 +84,11 @@ describe("createFakeAdapter", () => {
   });
 
   it("saves validated records with monotonic ids", async () => {
-    const [record] = records();
+    const [first] = records();
+    if (first === undefined) {
+      throw new Error("test fixture must contain at least one knowledge record");
+    }
+    const record = first;
     const adapter = createFakeAdapter([], { now: fixedNow });
 
     const saved = await adapter.mem_save(record);

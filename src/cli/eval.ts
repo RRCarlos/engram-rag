@@ -50,7 +50,8 @@ function p95(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const rank = Math.ceil(0.95 * sorted.length) - 1;
   const index = Math.max(0, Math.min(rank, sorted.length - 1));
-  return sorted[index];
+  // `index` is clamped to `[0, sorted.length - 1]`, so the slot is always defined.
+  return sorted[index]!;
 }
 
 function buildReport(
@@ -160,7 +161,7 @@ export async function runEvalCli(options: EvalCliOptions = {}): Promise<EvalCliR
       await runScenario(scenario, {
         adapter: parsed.adapter,
         baseUrl: parsed.baseUrl,
-        tools: options.tools,
+        ...(options.tools !== undefined ? { tools: options.tools } : {}),
       }),
     );
   }

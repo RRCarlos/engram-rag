@@ -81,7 +81,7 @@ export async function runScenario(
         baseUrl: options.baseUrl ?? "http://127.0.0.1:7437",
         project: scenario.project,
         scope: "project",
-        timeoutMs: options.timeoutMs,
+        ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
       })
     : createFakeAdapter(loadAllKnowledgeRecords()));
 

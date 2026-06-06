@@ -49,7 +49,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   const values = new Map<string, string>();
   let json = false;
   for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
+    const arg = argv[i]!;
     if (arg === "--json") {
       json = true;
       continue;

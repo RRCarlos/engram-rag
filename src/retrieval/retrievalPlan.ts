@@ -35,7 +35,7 @@ export function buildRetrievalPlan(request: RetrievalRequest): RetrievalPlan {
     ...triggers.map((trigger) => ({
       query: `${request.agent_id} ${trigger}`,
       project,
-      scope: "project",
+      scope: "project" as const,
       limit: 5,
     })),
   ];

@@ -48,7 +48,7 @@ function usage(): string {
 function parseArgs(argv: string[]): ParsedArgs {
   const values = new Map<string, string>();
   for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
+    const arg = argv[i]!;
     if (!arg.startsWith("--")) throw new Error(`Unexpected positional argument: ${arg}`);
     const key = arg.slice(2);
     if (!["project", "agent", "task", "action", "shell", "cwd", "base-url"].includes(key)) {
@@ -75,7 +75,13 @@ function parseArgs(argv: string[]): ParsedArgs {
   if (!ACTIONS.has(action)) throw new Error(`Invalid action: ${action}`);
   if (shell !== undefined && !SHELLS.has(shell)) throw new Error(`Invalid shell: ${shell}`);
 
-  return { project, agent, task, action, shell, cwd, baseUrl };
+  // Under `exactOptionalPropertyTypes: true` we must omit optional
+  // fields rather than assigning `undefined` to them, so build the
+  // result conditionally.
+  const result: ParsedArgs = { project, agent, task, action, baseUrl };
+  if (shell !== undefined) result.shell = shell;
+  if (cwd !== undefined) result.cwd = cwd;
+  return result;
 }
 
 function projectResult(result: PreflightResult): unknown {

@@ -30,7 +30,7 @@ describe("retrievalPlan", () => {
   it("is deterministic for the same request", () => {
     const request = {
       project: "engram-rag",
-      agent_id: "sdd-spec",
+      agent_id: "sdd-spec" as const,
       task_text: "Write a spec for retrieval planning",
       action_kind: "spec" as const,
     };

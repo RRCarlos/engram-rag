@@ -1,0 +1,6 @@
+{
+  "id": "doc-gamma",
+  "title": "Gamma Retrieval Reference",
+  "source_path": "fixtures/corpus/gamma.json",
+  "text": "Gamma retrieval covers lexical ties for deterministic tests. Shared ranking language mentions retrieval and citations together."
+}

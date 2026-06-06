@@ -1,0 +1,6 @@
+{
+  "id": "doc-alpha",
+  "title": "Alpha Retrieval Notes",
+  "source_path": "fixtures/corpus/alpha.json",
+  "text": "Alpha retrieval uses stable citations for every chunk. Shared ranking language mentions retrieval and citations together."
+}

@@ -1,0 +1,6 @@
+{
+  "id": "doc-beta",
+  "title": "Beta Retrieval Guide",
+  "source_path": "fixtures/corpus/beta.json",
+  "text": "Beta retrieval explains deterministic chunk order and source metadata. Shared ranking language mentions retrieval and citations together."
+}

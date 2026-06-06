@@ -99,7 +99,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const validatedMode = RetrievalModeSchema.parse(mode);
 
         const documents = await loadCorpusDocuments(corpus_dir);
-        const chunks = chunkDocuments(documents, { chunkSize: 256, chunkOverlap: 50 });
+        const chunks = chunkDocuments(documents, { maxCharacters: 256 });
 
         let results;
         if (validatedMode === "lexical") {
@@ -139,15 +139,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "rag_ingest": {
-        const { corpus_dir = "fixtures/corpus", embedder = "default", chunk_size = 256, chunk_overlap = 50 } = args as {
+        const { corpus_dir = "fixtures/corpus", embedder = "default", maxCharacters = 256 } = args as {
           corpus_dir?: string;
           embedder?: string;
-          chunk_size?: number;
-          chunk_overlap?: number;
+          maxCharacters?: number;
         };
 
         const documents = await loadCorpusDocuments(corpus_dir);
-        const chunks = chunkDocuments(documents, { chunkSize: chunk_size, chunkOverlap: chunk_overlap });
+        const chunks = chunkDocuments(documents, { maxCharacters });
 
         const embedderInstance = resolveEmbedder(embedder === "default" ? "hashing" : embedder);
         await buildSemanticIndex(chunks, embedderInstance, { corpusHash: computeCorpusHash(chunks) });
@@ -177,7 +176,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const validatedMode = RetrievalModeSchema.parse(mode);
         const scenarios = await loadRagEvalScenarios(scenario_file);
         const documents = await loadCorpusDocuments();
-        const chunks = chunkDocuments(documents, { chunkSize: 256, chunkOverlap: 50 });
+        const chunks = chunkDocuments(documents, { maxCharacters: 256 });
 
         const evalOptions: RagEvalOptions = {
           defaultMode: validatedMode,
@@ -212,7 +211,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "rag_stats": {
         const { corpus_dir = "fixtures/corpus" } = args as { corpus_dir?: string };
         const documents = await loadCorpusDocuments(corpus_dir);
-        const chunks = chunkDocuments(documents, { chunkSize: 256, chunkOverlap: 50 });
+        const chunks = chunkDocuments(documents, { maxCharacters: 256 });
 
         return {
           content: [
@@ -222,7 +221,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 documents: documents.length,
                 chunks: chunks.length,
                 corpus_dir,
-                total_chars: documents.reduce((sum, d) => sum + d.content.length, 0),
+                total_chars: documents.reduce((sum, d) => sum + d.text.length, 0),
               }, null, 2),
             },
           ],

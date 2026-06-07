@@ -475,3 +475,41 @@ The orchestrator's hard product rule for PR5 is closed:
 - ✅ `tasks.md` PR5 checkboxes flipped; PR6 left `[ ]` by design.
 - ✅ `apply-progress.md` merged PR5 evidence with PR1+PR2+PR3+PR4 (no overwrite).
 ```
+
+### PR6 / #32: Document-RAG Correctness Cleanup
+
+**Scope**: Fix document-RAG engine debt (`rag_query|rag_ingest|rag_eval|rag_stats`) — orthogonal to the operational learning loop.
+
+**Tasks completed**:
+- 6.1 `src/rag/chunker.ts` — token-based chunking with `chunkSize`/`chunkOverlap`, overlap validation, backwards-compat `maxCharacters`.
+- 6.2 `src/rag/semanticRetriever.ts` — `computeCorpusHash(chunks, embedder?)` includes chunk text content, embedder ID, and dimensions; diffs on config/content changes.
+- 6.3 `src/rag/embedder/hashingEmbedder.ts` — sign parity fixed (uses `(hash >> 1n) & 1n`), modulo indexing for non-power-of-2 dimensions.
+- `src/rag/graphIndex/store.ts` — `buildGraphIndex` no longer requires hardcoded dictionary; derives from corpus via `extractEntities` default dictionary.
+
+**Tests added** (20 new):
+- `test/rag/chunker.token.test.ts` (6): token chunking, overlap, validation, backwards compat.
+- `test/rag/embedder/hashingEmbedder.sign.test.ts` (6): sign parity, non-power-of-2 dims, determinism.
+- `test/rag/corpusHash.test.ts` (4): content sensitivity, config sensitivity, stability.
+- `test/rag/graphIndex/corpusDerived.test.ts` (4): corpus-derived adjacency, determinism, edgeCap.
+
+**Test results**:
+- `npm test`: 791 passed, 1 skipped
+- `npx tsc --noEmit`: clean
+- `npm run verify:all --skip-live`: 4/4 checks (124 focused + 255 guardrails + tsc + mcp:smoke)
+- `npm run mcp:smoke`: 11/11
+- Live P0 smoke: `outcome: "correct"`, `corrected_command: "cmd1; if ($?) { cmd2 }"`, `stable_trace_id` present, exit 4
+- Fake/live eval parity: 5/5 scenarios, stable traces match (`trc-2d427cea489a8619` on `powershell-and`)
+
+**Files changed**:
+| File | Action | Notes |
+|------|--------|-------|
+| `src/rag/chunker.ts` | Modified | Token-based chunking, overlap validation, ~120 lines |
+| `src/rag/semanticRetriever.ts` | Modified | `computeCorpusHash` content+config sensitivity |
+| `src/rag/embedder/hashingEmbedder.ts` | Modified | Sign parity fix, modulo indexing |
+| `src/rag/graphIndex/store.ts` | No change (uses default dictionary) | — |
+| `test/rag/chunker.token.test.ts` | Created | 6 tests |
+| `test/rag/embedder/hashingEmbedder.sign.test.ts` | Created | 6 tests |
+| `test/rag/corpusHash.test.ts` | Created | 4 tests |
+| `test/rag/graphIndex/corpusDerived.test.ts` | Created | 4 tests |
+
+**Budget**: PR6 net production ~180 lines + 20 tests — under 400-line PR target.

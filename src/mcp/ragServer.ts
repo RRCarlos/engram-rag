@@ -189,22 +189,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const validatedMode = RetrievalModeSchema.parse(mode);
 
         const documents = await loadCorpusDocuments(corpus_dir);
-        const chunks = chunkDocuments(documents, { maxCharacters: 256 });
+        const chunks = chunkDocuments(documents, { chunkSize: 256, chunkOverlap: 50 });
 
         let results;
         if (validatedMode === "lexical") {
           results = retrieveChunks({ text: query, top_k }, chunks);
         } else {
           const embedderInstance = resolveEmbedder(embedder === "default" ? "hashing" : embedder);
-          const corpusHash = computeCorpusHash(chunks);
+          const corpusHash = computeCorpusHash(chunks, embedderInstance);
           const prebuiltEntries: VectorIndexEntry[] = chunks.map((chunk) => ({
             id: chunk.id,
             vector: embedderInstance.embed(chunk.text),
           }));
-          const prebuiltGraph = buildGraphIndex(chunks, {
-            corpusHash,
-            dictionary: ["alpha", "beta", "gamma", "delta", "retrieval", "ranking", "lexical", "citations"],
-          });
+          const prebuiltGraph = buildGraphIndex(chunks, { corpusHash });
           results = retrieveHybrid(
             { text: query, top_k },
             chunks,
@@ -229,17 +226,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "rag_ingest": {
-        const { corpus_dir = "fixtures/corpus", embedder = "default", maxCharacters = 256 } = args as {
+        const { corpus_dir = "fixtures/corpus", embedder = "default", chunkSize = 256, chunkOverlap = 50 } = args as {
           corpus_dir?: string;
           embedder?: string;
-          maxCharacters?: number;
+          chunkSize?: number;
+          chunkOverlap?: number;
         };
 
         const documents = await loadCorpusDocuments(corpus_dir);
-        const chunks = chunkDocuments(documents, { maxCharacters });
+        const chunks = chunkDocuments(documents, { chunkSize, chunkOverlap });
 
         const embedderInstance = resolveEmbedder(embedder === "default" ? "hashing" : embedder);
-        await buildSemanticIndex(chunks, embedderInstance, { corpusHash: computeCorpusHash(chunks) });
+        await buildSemanticIndex(chunks, embedderInstance, { corpusHash: computeCorpusHash(chunks, embedderInstance) });
 
         return {
           content: [
@@ -266,24 +264,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const validatedMode = RetrievalModeSchema.parse(mode);
         const scenarios = await loadRagEvalScenarios(scenario_file);
         const documents = await loadCorpusDocuments();
-        const chunks = chunkDocuments(documents, { maxCharacters: 256 });
+        const chunks = chunkDocuments(documents, { chunkSize: 256, chunkOverlap: 50 });
 
         const evalOptions: RagEvalOptions = {
           defaultMode: validatedMode,
         };
 
         if (validatedMode !== "lexical") {
-          evalOptions.embedder = resolveEmbedder("hashing");
+          const embedderInstance = resolveEmbedder("hashing");
+          evalOptions.embedder = embedderInstance;
           evalOptions.prebuiltEntries = chunks.map((chunk) => ({
             id: chunk.id,
-            vector: evalOptions.embedder!.embed(chunk.text),
+            vector: embedderInstance.embed(chunk.text),
           }));
-          evalOptions.corpusHash = computeCorpusHash(chunks);
-          evalOptions.graphDictionary = ["alpha", "beta", "gamma", "delta", "retrieval", "ranking", "lexical", "citations"];
-          evalOptions.prebuiltGraph = buildGraphIndex(chunks, {
-            corpusHash: evalOptions.corpusHash,
-            dictionary: evalOptions.graphDictionary,
-          });
+          evalOptions.corpusHash = computeCorpusHash(chunks, embedderInstance);
+          evalOptions.prebuiltGraph = buildGraphIndex(chunks, { corpusHash: evalOptions.corpusHash });
         }
 
         const result = evaluateRagScenarios(scenarios, chunks, evalOptions);
@@ -301,7 +296,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "rag_stats": {
         const { corpus_dir = "fixtures/corpus" } = args as { corpus_dir?: string };
         const documents = await loadCorpusDocuments(corpus_dir);
-        const chunks = chunkDocuments(documents, { maxCharacters: 256 });
+        const chunks = chunkDocuments(documents, { chunkSize: 256, chunkOverlap: 50 });
 
         return {
           content: [

@@ -26,6 +26,17 @@ jobs:
       - name: Run test suite
         run: npm test
 
+      # PR5 / #31 — the unified verify:all entry point. Runs the
+      # focused tests, the static guardrails, the TypeScript
+      # typecheck, and the mcp:smoke check end-to-end. The live P0
+      # smoke is opt-in via ENGRAM_BASE_URL / ENGRAM_PROJECT and is
+      # skipped on every CI run by --skip-live.
+      - name: Run unified verify:all (PR5 / #31)
+        run: npm run verify:all -- --skip-live
+
+      - name: Run MCP smoke (PR5 / #31)
+        run: npm run mcp:smoke
+
       - name: Run Phase 1 verify
         run: npm run verify:phase1
 

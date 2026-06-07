@@ -41,6 +41,28 @@ describe("ci workflow", () => {
     expect(phase4Index).toBeGreaterThan(phase3Index);
   });
 
+  it("runs the PR5 / #31 unified verify:all gate after the test suite", () => {
+    // PR5 / #31 closes the spec scenario "Stable verify commands":
+    // the new entry point is non-recursive, replaces the old
+    // `test:verify` script, and is wired into CI so a regression in
+    // the operational loop cannot merge.
+    const wf = readWorkflow();
+    expect(wf).toMatch(/run:\s*npm run verify:all/);
+    // The verify:all step must come AFTER `npm test` so a test
+    // regression is caught first.
+    const testIndex = wf.indexOf("run: npm test");
+    const verifyAllIndex = wf.indexOf("run: npm run verify:all");
+    expect(verifyAllIndex).toBeGreaterThan(testIndex);
+  });
+
+  it("runs the PR5 / #31 MCP smoke step in CI", () => {
+    // The MCP smoke is a fast static check (no server spawn) and
+    // guards the no-rag_* surface, the launcher shape, and the
+    // 7-tool union.
+    const wf = readWorkflow();
+    expect(wf).toMatch(/run:\s*npm run mcp:smoke/);
+  });
+
   it("triggers on push and pull_request to main", () => {
     const wf = readWorkflow();
     expect(wf).toMatch(/push:/);

@@ -45,6 +45,8 @@ testing:
       available: false
       command: null
   verify_commands:
+    - npm run verify:all
+    - npm run mcp:smoke
     - npm run test:verify
     - npm run verify:phase1
     - npm run verify:phase2

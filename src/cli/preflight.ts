@@ -41,7 +41,7 @@ const SHELLS = new Set<ShellKind>(["powershell", "bash", "unknown"]);
 function usage(): string {
   return [
     "Usage: engram-rag preflight --project <name> --agent <agent> --task-file <path> [--action <kind>] [--shell <kind>] [--json]",
-    "Exit codes: 0 ok, 1 invalid flags, 2 degraded adapter result, 3 invalid task/request.",
+    "Exit codes: 0 ok, 1 invalid flags, 2 degraded adapter result (safe actions only), 3 invalid task/request, 4 enforcement blocked or corrected (do not proceed as-is).",
   ].join("\n");
 }
 
@@ -141,8 +141,10 @@ export async function runPreflightCli(argv: string[]): Promise<CliResult> {
           `records=${result.records.length}`,
           `degraded=${String(result.degraded)}`,
           `latency_ms=${result.latency_ms.toFixed(2)}`,
+          `enforcement=${result.enforcement.outcome}`,
         ].join("\n") + "\n";
-    return { exitCode: result.degraded ? 2 : 0, stdout, stderr: "" };
+    const blocked = result.enforcement.outcome === "correct" || result.enforcement.outcome === "blocked";
+    return { exitCode: blocked ? 4 : result.degraded ? 2 : 0, stdout, stderr: "" };
   } catch (error) {
     return { exitCode: 3, stdout: "", stderr: `${(error as Error).message}\n` };
   }

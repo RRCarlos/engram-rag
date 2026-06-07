@@ -15,6 +15,7 @@ import type {
   MemSaveResult,
   MemSearchInput,
   MemSearchResult,
+  QuarantinedRecord,
 } from "./EngramTools.js";
 
 /** Live HTTP adapter for EngramTools; uses Node 20 global fetch and zero deps. */
@@ -47,6 +48,7 @@ export interface LiveEngramAdapterOptions {
 export interface LiveEngramAdapter extends EngramTools {
   getCallLog(): LiveEngramCall[];
   resetCallLog(): void;
+  getQuarantinedRecords(): QuarantinedRecord[];
   healthCheck(): Promise<boolean>;
   getSessionId(): string | undefined;
 }
@@ -307,8 +309,14 @@ export function createLiveAdapter(
 
   let sessionId = options.sessionId;
   const calls: LiveEngramCall[] = [];
+  const quarantinedRecords: QuarantinedRecord[] = [];
   const log = (method: LiveEngramMethod, input: unknown) => {
     calls.push({ method, input, at: nowIso(now) });
+  };
+  const quarantine = (record: QuarantinedRecord) => {
+    if (!quarantinedRecords.some((existing) => existing.id === record.id && existing.source === record.source)) {
+      quarantinedRecords.push(record);
+    }
   };
 
   async function http<T>(
@@ -443,16 +451,12 @@ export function createLiveAdapter(
         try {
           results.push(rawToSearchResult(parsed.data, input.query, i, now));
         } catch (err) {
-          if (err instanceof z.ZodError) {
-            throw new LiveEngramParseError(
-              `Failed to map observation ${parsed.data.id} to KnowledgeRecord: ${err.issues
+          const reason = err instanceof z.ZodError
+            ? `Failed to map observation ${parsed.data.id} to KnowledgeRecord: ${err.issues
                 .map((issue) => `${issue.path.join(".") || "<root>"}: ${issue.message}`)
-                .join("; ")}`,
-              parsed.data.id,
-              "mem_search",
-            );
-          }
-          throw err;
+                .join("; ")}`
+            : (err as Error).message;
+          quarantine({ id: parsed.data.id, reason, source: "search" });
         }
       }
       return results;
@@ -467,7 +471,14 @@ export function createLiveAdapter(
           `GET /observations/${input.id} returned unexpected shape: ${JSON.stringify(data).slice(0, 200)}`,
         );
       }
-      const record = parseEngramContentToRecord(parsed.data, now);
+      let record;
+      try {
+        record = parseEngramContentToRecord(parsed.data, now);
+      } catch (err) {
+        const reason = (err as Error).message;
+        quarantine({ id: parsed.data.id, reason, source: "get" });
+        throw new LiveEngramParseError(reason, parsed.data.id, "mem_get_observation");
+      }
       return {
         id: parsed.data.id,
         topic_key: record.topic_key,
@@ -507,6 +518,10 @@ export function createLiveAdapter(
 
     resetCallLog(): void {
       calls.length = 0;
+    },
+
+    getQuarantinedRecords(): QuarantinedRecord[] {
+      return quarantinedRecords.map((record) => ({ ...record }));
     },
 
     async healthCheck(): Promise<boolean> {

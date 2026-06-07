@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { KnowledgeRecordSchema } from "../contracts/knowledgeRecord.js";
+import { ActionKindSchema, RetrievalRequestSchema } from "../contracts/retrieval.js";
 
 /**
  * Engram MCP tool contract for the engram-rag preflight adapter.
@@ -169,6 +170,12 @@ export const MemSaveResultSchema = z
   .strict();
 export type MemSaveResult = z.infer<typeof MemSaveResultSchema>;
 
+export interface QuarantinedRecord {
+  id: number;
+  reason: string;
+  source: "search" | "get";
+}
+
 // ---------------------------------------------------------------------------
 // Interface — every adapter (fake, live, future) implements this.
 // ---------------------------------------------------------------------------
@@ -185,6 +192,10 @@ export interface EngramTools {
   mem_search(input: MemSearchInput): Promise<MemSearchResult[]>;
   mem_get_observation(input: MemGetObservationInput): Promise<MemObservation>;
   mem_save(input: MemSaveInput): Promise<MemSaveResult>;
+}
+
+export interface EngramQuarantineReporter {
+  getQuarantinedRecords(): QuarantinedRecord[];
 }
 
 // ---------------------------------------------------------------------------
@@ -207,4 +218,77 @@ export function parseMemGetObservationInput(
 
 export function parseMemSaveInput(input: unknown): MemSaveInput {
   return MemSaveInputSchema.parse(input);
+}
+
+// ---------------------------------------------------------------------------
+// Operational contract — the typed surface exposed by the MCP tools
+// `error_preflight`, `error_learn`, and `error_stats` (PR3 / #29).
+//
+// The operational layer is a projection over the underlying memory
+// tools. `error_preflight` reuses `runPreflight` + `evaluateEnforcement`
+// from PR1+PR2; `error_learn` reuses `mem_save`; `error_stats` reads
+// the in-process operational metrics state. The schemas below are the
+// contract the MCP dispatch layer validates before calling the
+// engine, so a malformed MCP request never reaches the runner.
+// ---------------------------------------------------------------------------
+
+/**
+ * Action kinds the operational preflight accepts. Mirrors
+ * `ActionKindSchema` from the retrieval contract; we re-export it under
+ * an operational name so the MCP tool descriptor can be generated
+ * without importing the retrieval module from the schema file.
+ */
+export const OperationalActionSchema = ActionKindSchema;
+export type OperationalAction = z.infer<typeof OperationalActionSchema>;
+
+/**
+ * Input for the `error_preflight` tool. Shape-compatible with
+ * `RetrievalRequest`: the runner accepts the parsed value directly
+ * without rebuilding it.
+ */
+export const OperationalPreflightInputSchema = RetrievalRequestSchema;
+export type OperationalPreflightInput = z.infer<typeof OperationalPreflightInputSchema>;
+
+/**
+ * Input for the `error_learn` tool. A successful learn records a
+ * new `KnowledgeRecord` via `mem_save`, so the schema is the same
+ * strict contract used by the underlying adapter.
+ */
+export const OperationalLearnInputSchema = MemSaveInputSchema;
+export type OperationalLearnInput = z.infer<typeof OperationalLearnInputSchema>;
+
+/**
+ * Snapshot of the in-process operational metrics, returned by the
+ * `error_stats` tool. Rates are bounded to [0, 1] and counters are
+ * non-negative integers.
+ */
+export const OperationalMetricsSchema = z
+  .object({
+    preflight_coverage: z.number().min(0).max(1),
+    retrieval_hit_rate: z.number().min(0).max(1),
+    application_rate: z.number().min(0).max(1),
+    repeat_error_rate: z.number().min(0).max(1),
+    prevention_rate: z.number().min(0).max(1),
+    total_consults: z.number().int().nonnegative(),
+    total_learns: z.number().int().nonnegative(),
+  })
+  .strict();
+export type OperationalMetrics = z.infer<typeof OperationalMetricsSchema>;
+
+/**
+ * Parse a preflight request from an unknown MCP payload. The same
+ * strict validation as `parseRetrievalRequest`; we expose it under an
+ * operational name so MCP handlers do not need to import the
+ * retrieval contract.
+ */
+export function parseOperationalPreflightInput(input: unknown): OperationalPreflightInput {
+  return OperationalPreflightInputSchema.parse(input);
+}
+
+/**
+ * Parse a learn request from an unknown MCP payload. Strict
+ * `KnowledgeRecord` validation; re-uses `parseMemSaveInput`.
+ */
+export function parseOperationalLearnInput(input: unknown): OperationalLearnInput {
+  return OperationalLearnInputSchema.parse(input);
 }

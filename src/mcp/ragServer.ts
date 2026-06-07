@@ -15,6 +15,91 @@ import { resolveEmbedder, isRegistered } from "../rag/embedder/registry.js";
 import { buildGraphIndex } from "../rag/graphIndex/store.js";
 import type { VectorIndexEntry } from "../rag/vectorIndex/store.js";
 import type { Embedder } from "../rag/embedder/embedder.js";
+import type { EngramTools } from "../engram/EngramTools.js";
+import { createLiveAdapter } from "../engram/liveEngramAdapter.js";
+import { createFakeAdapter } from "../engram/fakeEngramAdapter.js";
+import {
+  createOperationalMetricsState,
+  defaultOperationalMetricsPath,
+  loadOperationalMetricsState,
+  saveOperationalMetricsState,
+  type OperationalMetricsState,
+} from "./operationalMetrics.js";
+import {
+  dispatchOperationalTool,
+  listOperationalTools,
+} from "./operationalTools.js";
+
+/**
+ * Build the operational context used by the `error_*` tools.
+ *
+ * The operational layer is plumbed into the existing
+ * `engram-rag` MCP server alongside the document-RAG tools. The
+ * adapter is selected from environment variables so the server can
+ * run in either:
+ *
+ *   - **Live mode** (default when `ENGRAM_BASE_URL` and
+ *     `ENGRAM_PROJECT` are set): the live HTTP adapter talks to a
+ *     real Engram instance.
+ *   - **Fake mode** (default otherwise): an empty in-memory adapter.
+ *     Consults return degraded results, but the server still boots
+ *     and the wiring is exercisable. The fake adapter is the only
+ *     adapter covered by automated tests; live integration is
+ *     verified by a local smoke run with the env vars set.
+ *
+ * The metrics state is loaded from the disk path returned by
+ * `defaultOperationalMetricsPath()` on boot. After every
+ * `recordConsult` / `recordLearn` the state is persisted back to
+ * the same path on a best-effort basis (write errors are logged to
+ * stderr but do not crash the server). The path defaults to
+ * `<cwd>/.engram/metrics.json`; override with
+ * `ENGRAM_METRICS_PATH`. `ENGRAM_METRICS_DISABLED=1` disables
+ * persistence entirely (used by tests and CI).
+ */
+function buildOperationalContext(): {
+  tools: EngramTools;
+  metrics: OperationalMetricsState;
+  metricsPath: string | null;
+} {
+  const baseUrl = process.env.ENGRAM_BASE_URL;
+  const project = process.env.ENGRAM_PROJECT;
+  const scope =
+    process.env.ENGRAM_SCOPE === "personal" ? "personal" : "project";
+  const metricsPath =
+    process.env.ENGRAM_METRICS_DISABLED === "1"
+      ? null
+      : defaultOperationalMetricsPath();
+  const metrics: OperationalMetricsState =
+    metricsPath === null
+      ? createOperationalMetricsState()
+      : loadOperationalMetricsState(metricsPath);
+  if (baseUrl !== undefined && project !== undefined && baseUrl.length > 0) {
+    const tools = createLiveAdapter({ baseUrl, project, scope });
+    return { tools, metrics, metricsPath };
+  }
+  const tools = createFakeAdapter([]);
+  return { tools, metrics, metricsPath };
+}
+
+const operationalContext = buildOperationalContext();
+
+/**
+ * Persist the operational metrics state. Errors are logged to stderr
+ * so a read-only or otherwise broken file system never crashes the
+ * MCP server; the in-memory state remains the source of truth for
+ * the rest of the process lifetime.
+ */
+function persistOperationalMetrics(): void {
+  const path = operationalContext.metricsPath;
+  if (path === null) return;
+  try {
+    saveOperationalMetricsState(path, operationalContext.metrics);
+  } catch (error) {
+    process.stderr.write(
+      `[engram-rag] failed to persist operational metrics to ${path}: ${(error as Error).message}\n`,
+    );
+  }
+}
 
 const server = new Server(
   {
@@ -79,6 +164,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
       },
     },
+    // Operational tools (PR3 / #29). Distinct surface from the
+    // document-RAG tools above: `error_*` operates on Engram
+    // memories, not on a corpus. Wired through the same SDK
+    // dispatcher so the MCP boundary is unified.
+    ...listOperationalTools(),
   ],
 }));
 
@@ -229,6 +319,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       default:
+        // Operational tools (PR3 / #29). They use Engram memories,
+        // not the document corpus, so they live outside the rag_*
+        // switch but share the same SDK dispatcher.
+        if (
+          name === "error_preflight" ||
+          name === "error_learn" ||
+          name === "error_stats"
+        ) {
+          const { tools, metrics } = operationalContext;
+          const operational = await dispatchOperationalTool(
+            name,
+            tools,
+            metrics,
+            args,
+          );
+          // PR4 / #30: persist metrics after every consult / learn.
+          // error_stats does not mutate the state, so the persist is a
+          // no-op write — acceptable because the file is small and
+          // operators expect the latest snapshot to be on disk.
+          persistOperationalMetrics();
+          return { content: operational.content, ...(operational.isError === true ? { isError: true } : {}) };
+        }
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error) {

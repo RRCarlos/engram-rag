@@ -4,17 +4,22 @@
   "private": true,
   "description": "Verifiable knowledge retrieval for agents, Phase 1 contract",
   "type": "module",
+  "bin": {
+    "engram-rag-stdio": "bin/engram-rag-stdio.mjs"
+  },
   "scripts": {
     "test": "vitest run --exclude \"test/cli/verifyPhase*.test.ts\"",
-    "test:verify": "vitest run test/cli/verifyPhase1.test.ts test/cli/verifyPhase2.test.ts test/cli/verifyPhase3.test.ts test/cli/verifyPhase4.test.ts",
+    "test:verify": "node --import tsx src/cli/verifyAll.ts",
     "test:watch": "vitest",
     "eval": "node --import tsx src/cli/eval.ts",
     "patch:live-skills": "node --import tsx src/cli/patchLiveSkills.ts",
+    "verify:all": "node --import tsx src/cli/verifyAll.ts",
     "verify:phase1": "node --import tsx src/cli/verifyPhase1.ts",
     "verify:phase2": "node --import tsx src/cli/verifyPhase2.ts",
     "verify:phase3": "node --import tsx src/cli/verifyPhase3.ts",
     "verify:phase4": "node --import tsx src/cli/verifyPhase4.ts",
-    "mcp": "node --import tsx src/mcp/ragServer.ts",
+    "mcp": "node bin/engram-rag-stdio.mjs",
+    "mcp:smoke": "node --import tsx src/cli/mcpSmoke.ts",
     "dashboard": "node --import tsx src/api/dashboardServer.ts"
   },
   "devDependencies": {

@@ -41,7 +41,7 @@ export type LiveAdapterFactory = (args: ParsedArgs) => EngramTools & Partial<Pic
 function usage(): string {
   return [
     "Usage: engram-rag preflight-live --project <name> --agent <agent> --task <text> --action <kind> [--shell <kind>] [--cwd <path>] [--base-url <url>]",
-    "Exit codes: 0 ok, 1 invalid flags, 2 degraded result, 3 live Engram unavailable or request failed.",
+    "Exit codes: 0 ok, 1 invalid flags, 2 degraded result (safe actions only), 3 live Engram unavailable or request failed, 4 enforcement blocked or corrected (do not proceed as-is).",
   ].join("\n");
 }
 
@@ -85,19 +85,46 @@ function parseArgs(argv: string[]): ParsedArgs {
 }
 
 function projectResult(result: PreflightResult): unknown {
+  const enforcement: Record<string, unknown> = {
+    outcome: result.enforcement.outcome,
+    reason: result.enforcement.reason,
+    consulted_ids: result.enforcement.consulted_ids,
+    missing_expected_records: result.enforcement.missing_expected_records,
+    quarantined_records: result.enforcement.quarantined_records,
+    trace_id: result.enforcement.trace_id,
+    stable_trace_id: result.enforcement.stable_trace_id,
+  };
+  if (result.enforcement.corrected_command !== undefined) {
+    enforcement.corrected_command = result.enforcement.corrected_command;
+  }
   return {
     applied_rules: result.applied_rules,
+    consulted_ids: result.consulted_ids,
+    quarantined_records: result.quarantined_records,
+    correction_candidates: result.correction_candidates,
     missing_expected_records: result.missing_expected_records,
     degraded: result.degraded,
     latency_ms: result.latency_ms,
-    records: result.records.map((record) => ({
+    records: result.records.map((record, index) => ({
+      id: result.consulted_ids[index],
       topic_key: record.topic_key,
       agent_id: record.agent_id,
       failure_kind: record.failure_kind,
       failure_signature: record.failure_signature,
       validation_status: record.validation_status,
     })),
+    enforcement,
   };
+}
+
+function exitCodeFor(result: PreflightResult): number {
+  if (
+    result.enforcement.outcome === "correct" ||
+    result.enforcement.outcome === "blocked"
+  ) {
+    return 4;
+  }
+  return result.degraded ? 2 : 0;
 }
 
 export async function runPreflightLiveCli(
@@ -131,7 +158,7 @@ export async function runPreflightLiveCli(
     });
     const result = await runPreflight(request, adapter);
     return {
-      exitCode: result.degraded ? 2 : 0,
+      exitCode: exitCodeFor(result),
       stdout: `${JSON.stringify(projectResult(result), null, 2)}\n`,
       stderr: "",
     };

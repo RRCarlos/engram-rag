@@ -156,6 +156,30 @@ describe("LiveEngramAdapter.mem_search", () => {
     expect(empty).toEqual([]);
   });
 
+  it("quarantines legacy-alias search observations without dropping valid hits", async () => {
+    const { adapter, mock } = makeAdapter();
+    const forbiddenAlias = ["protocol", "rigor", "v1"].join("/");
+    mock.enqueue({
+      status: 200,
+      body: [
+        { ...markdownObservation, id: 999, topic_key: `${forbiddenAlias}/legacy-hit` },
+        markdownObservation,
+      ],
+    });
+
+    const results = await adapter.mem_search({
+      query: "powershell && memoria #152",
+      project: "engram-rag",
+      scope: "project",
+      limit: 5,
+    });
+
+    expect(results.map((result) => result.id)).toEqual([152]);
+    expect(adapter.getQuarantinedRecords()).toEqual([
+      { id: 999, reason: expect.stringContaining("Forbidden v1"), source: "search" },
+    ]);
+  });
+
   it("throws on unexpected server shape", async () => {
     const { adapter, mock } = makeAdapter();
     mock.enqueue({ status: 200, body: { not: "array" } });

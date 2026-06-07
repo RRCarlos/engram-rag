@@ -62,6 +62,6 @@ Chain strategy: stacked-to-main
 
 ## PR6 / #32: Document-RAG Correctness Cleanup
 
-- [ ] 6.1 Fix `src/rag/chunker.ts` chunking and overlap validation with tests.
-- [ ] 6.2 Fix corpus hash/config sensitivity in retrieval/index code with tests.
-- [ ] 6.3 Fix `src/rag/embedder/hashingEmbedder.ts` sign parity and graph derivation tests.
+- [x] 6.1 Fix `src/rag/chunker.ts` chunking and overlap validation with tests.
+- [x] 6.2 Fix corpus hash/config sensitivity in retrieval/index code with tests.
+- [x] 6.3 Fix `src/rag/embedder/hashingEmbedder.ts` sign parity and graph derivation tests.

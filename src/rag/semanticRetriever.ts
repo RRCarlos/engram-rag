@@ -32,9 +32,23 @@ export type SemanticRetrieveOptions = {
   prebuiltEntries?: VectorIndexEntry[];
 };
 
-export function computeCorpusHash(chunks: DocumentChunk[]): string {
-  const ids = chunks.map((c) => c.id).sort((a, b) => a.localeCompare(b));
-  return createHash("sha256").update(ids.join("\n"), "utf8").digest("hex").slice(0, 16);
+/**
+ * Compute a content-and-config-sensitive corpus hash.
+ *
+ * Includes:
+ * - Sorted chunk IDs
+ * - Chunk text content (so content edits change hash)
+ * - Embedder ID and dimensions (so config edits change hash)
+ */
+export function computeCorpusHash(
+  chunks: DocumentChunk[],
+  embedder?: { id: string; dimensions: number },
+): string {
+  const sorted = [...chunks].sort((a, b) => a.id.localeCompare(b.id));
+  const content = sorted.map((c) => `${c.id}\n${c.text}`).join("\n---\n");
+  const config = embedder ? `${embedder.id}:${embedder.dimensions}` : "default";
+  const input = `${config}\n${content}`;
+  return createHash("sha256").update(input, "utf8").digest("hex").slice(0, 16);
 }
 
 export async function buildSemanticIndex(

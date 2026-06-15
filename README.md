@@ -1,112 +1,88 @@
-# engram-rag
+# Proyecto_ErrorLog
 
-> Retrieval-Augmented Generation for the Engram persistent memory system.
+> Base de datos de errores y soluciones para subagentes de IA.
 
-engram-rag is a **verifiable knowledge retrieval system** designed to give AI agents structured, typed access to past failures, operational rules, and document knowledge. It powers the Gentle AI / OpenCode ecosystem's error-learning loop, where agents consult a memory of past failures before taking actions — and record new failures to improve over time.
+ErrorLog es un sistema que permite a los subagentes de IA **almacenar errores que cometieron y consultar errores pasados antes de actuar**. La idea es simple: si un subagente ya se mandó una cagada antes, que tenga memoria de eso y no la repita.
 
-It runs as an MCP server and exposes 7 retrieval tools.
+Arrancó como un experimento de RAG (recuperación de documentos) pero evolucionó a algo más concreto: una base operacional de incidentes con capacidad de búsqueda, resolución tipada, y persistencia en Engram.
 
-## Table of Contents
-
-- [Where the idea comes from](#where-the-idea-comes-from)
-- [What it solves](#what-it-solves)
-- [Two surfaces](#two-surfaces)
-- [Honest assessment](#honest-assessment)
-- [Quickstart](#quickstart)
-- [Architecture](#architecture)
-- [Project layout](#project-layout)
-- [Exit code matrix](#exit-code-matrix)
-- [MCP surface](#mcp-surface)
-- [opencode integration](#opencode-integration)
-- [Windows-safe shell pattern](#windows-safe-shell-pattern)
-- [Test coverage](#test-coverage)
-- [CI](#ci)
-- [Phase status](#phase-status)
-- [Key contracts](#key-contracts)
-- [Source of truth](#source-of-truth)
+Se expone como servidor MCP con 7 herramientas.
 
 ---
 
-## Where the idea comes from
+## ¿Qué problema resuelve?
 
-The project started in 2024 as a Spanish-language exploration (`rag-system/fase-2/`, `rag-system/fase-final/`) into building a RAG/KAG hybrid for Engram — modeled on ideas from Microsoft's GraphRAG and from classic lexical retrieval (BM25). That version was a proof of concept: it proved the concept was viable but the code was not production-grade.
+Los subagentes de IA (los que ejecutan fases como proposal, design, apply, verify) **no tienen memoria**. Cada vez que arrancan arrancan de cero. Si un subagente de `sdd-apply` ya cometió un error de frontmatter de skill, lo va a volver a cometer porque no tiene registro de que eso ya pasó.
 
-**v2 was rebuilt from scratch** with a contract-first approach:
+ErrorLog resuelve eso:
 
-- Everything starts with **Zod schemas** — there's no untyped data flowing through the system
-- **Deterministic retrieval** — the `buildRetrievalPlan` function is a pure function; given the same input, it always produces the same plan
-- **No black-box embeddings** — the embedder system uses a hashing embedder that is deterministic and auditable
-- **Phased verification** — each phase ships with a `verify:phaseN` script that proves it works
-
-The second evolution was the **agent error-learning loop** (`agent-error-learning-loop`), which turned the document RAG system into an operational memory system for agents. Instead of retrieving from a static corpus, it consults Engram's persistent memory of past failures — and records new ones with structured metadata.
-
-The core problem this solves is: **AI agents repeat the same mistakes** because they have no structured memory of what went wrong before. A preflight consultation prevents known failure patterns; an enforcement engine provides typed outcomes (`allow` / `correct` / `blocked`); and the operational metrics prove the system is working (or shows when it's degrading).
+1. **Antes de actuar**, el subagente consulta si ya hubo errores similares en el pasado
+2. **Si encuentra un match**, recibe una corrección tipada (`allow` / `correct` / `blocked`)
+3. **Si comete un error nuevo**, lo registra con su solución para el futuro
+4. **Métricas operacionales** que prueban que el sistema está funcionando (o muestran cuando está degradado)
 
 ---
 
-## What it solves
+## ¿De dónde viene la idea?
 
-AI agents in the SDD workflow (proposal → specs → design → tasks → apply → verify → archive) need to:
+El proyecto arrancó en 2024 como `engram-rag`, una exploración en español de RAG/KAG híbrido inspirado en GraphRAG de Microsoft. Esa versión (`rag-system/fase-2/`, `rag-system/fase-final/`) demostró que la idea era viable pero el código no era producible.
 
-1. **Remember past failures and corrections** — the error-learning loop consults Engram before every action and surfaces known failure patterns
-2. **Retrieve relevant knowledge** — from both the document corpus (specs, docs, code) and from Engram memory (past fixes, decisions)
-3. **Get deterministic, verifiable retrieval** — no opaque vector math; every retrieval step is logged and auditable
-4. **Handle PowerShell safely** — the `cmd1; if ($?) { cmd2 }` pattern is the canonical fix for `&&` on Windows, and the enforcement engine provides typed `corrected_command` strings
-5. **Prove it works** — every phase has a verification gate; `npm run verify:all` is the single source of truth
+**v2 se reescribió de cero** con un enfoque contract-first:
+
+- Todo arranca con **esquemas Zod** — no hay datos sin tipar circulando
+- **Recuperación determinista** — `buildRetrievalPlan` es una función pura
+- **Sin embeddings black-box** — el sistema de embedders usa un hashing determinista y auditable
+- **Verificación por fases** — cada fase tiene un script `verify:phaseN` que prueba que funciona
+
+La segunda evolución fue el **agent-error-learning-loop**, que transformó el RAG documental en un sistema de memoria operacional para subagentes. Ahí nació ErrorLog como concepto: ya no se trata de recuperar documentos, sino de **recordar errores**.
 
 ---
 
-## Two surfaces
+## Lo que hace
 
-engram-rag is actually **two systems** sharing the same MCP server:
+ErrorLog tiene dos caras que comparten el mismo servidor MCP:
 
-| System | What it does | Tools | Backend |
-|--------|-------------|-------|---------|
-| **Document RAG** | Retrieves from a structured document corpus | `rag_query`, `rag_ingest`, `rag_eval`, `rag_stats` | `src/rag/` — hybrid / semantic / lexical / graph retrieval |
-| **Operational error-learning loop** | Consults and records Engram memory of past failures | `error_preflight`, `error_learn`, `error_stats` | `src/engram/` — preflight consultation, typed enforcement, operational metrics |
+| Sistema | Qué hace | Tools | Backend |
+|---------|----------|-------|---------|
+| **Error-learning loop** | Consulta y registra errores pasados en Engram | `error_preflight`, `error_learn`, `error_stats` | `src/engram/` — preflight, enforcement tipado, métricas |
+| **Document RAG** | Recuperación desde un corpus de documentos (legacy) | `rag_query`, `rag_ingest`, `rag_eval`, `rag_stats` | `src/rag/` — recuperación híbrida/léxica/semántica/grafo |
 
-**Hard rule:** `error_*` tools call Engram only. They never call a `rag_*` surface. The `mcp:smoke` script enforces this with a static scan.
+**Regla dura:** las tools `error_*` solo llaman a Engram. Nunca llaman a la superficie `rag_*`. El script `mcp:smoke` lo enforcea con un scan estático.
 
 ---
 
 ## Honest assessment
 
-The user asked for **brutal honesty**. Here it is.
+### Lo que está sólido ✅
 
-### What's solid ✅
+- **Arquitectura modular, tipada, testeable.** Separación clara entre contracts, retrieval, engram, MCP, CLI.
+- **Cobertura de tests fuerte.** 65 tests para 50 módulos fuente (~130%). Graph index, embedders, pipeline de retrieval, enforcement, trace system, hybrid retriever — todo cubierto.
+- **TypeScript compila limpio.** `npx tsc --noEmit` pasa con `strict: true`.
+- **El MCP server funciona.** `npm run mcp:smoke` prueba que las 7 herramientas responden.
+- **Multiplataforma.** El launcher evita `cmd /c`, `shell: true`, y `&&`. Funciona igual en Windows, macOS y Linux.
+- **Decisiones documentadas.** `rag-system/v2/charter.md` + `design.md` explican el porqué de cada cosa.
 
-- **Core architecture is good.** Modular, typed, testable. The separation between contracts, retrieval engine, engram adapters, MCP surface, and CLI is clean.
-- **Test coverage is strong.** 65 test files for 50 source modules (~130% ratio). The graph index, embedders, retrieval pipeline, enforcement, trace system, and hybrid retriever are all tested.
-- **TypeScript compiles clean.** `npx tsc --noEmit` passes with `strict: true`.
-- **The MCP server works.** `npm run mcp:smoke` proves the 7-tool union is healthy and the operational surface doesn't leak into the RAG surface.
-- **Design decisions are documented.** `rag-system/v2/charter.md` and `rag-system/v2/design.md` explain the why. `openspec/changes/agent-error-learning-loop/` contains the full SDD spec, design, and tasks.
-- **Cross-platform is handled.** The stdio launcher avoids `cmd /c`, `shell: true`, and `&&` — it works the same on Windows, macOS, and Linux.
+### Lo que está flojo o incompleto ⚠️
 
-### What's weak or incomplete ⚠️
+| Issue | Impacto | Detalle |
+|-------|---------|---------|
+| **Integración live con Engram sin test en CI** | Medio | El adaptador live requiere `ENGRAM_BASE_URL` y `ENGRAM_PROJECT`. CI no los setea. Si Engram cambia su API, se rompe en silencio. |
+| **`ragServer.ts` sin tests directos** | Bajo-Medio | El entry point del MCP server no tiene tests unitarios. Las tools se prueban individualmente y `mcpSmoke` hace un chequeo de superficie, pero si el wiring se rompe el suite no lo atrapa. |
+| **`dashboardServer.ts` es dead code de v1** | Bajo | 236 líneas de un servidor HTTP para un dashboard HTML que nadie usa. Sin tests, sin callers en v2. |
+| **`verifyAll` tiene un quirk en Windows** | Bajo | El chequeo `invokedDirectly` construye una URL `file://` manualmente que puede fallar en Windows. |
+| **Sin benchmarks de rendimiento** | Bajo | No hay tests de performance (p50/p95). Existen scores de eval pero no regresiones de latencia. |
+| **Estado del CI desconocido** | Bajo | El workflow existe pero no hay badge ni evidencia de que pase en GitHub Actions. |
 
-| Issue | Impact | Details |
-|-------|--------|---------|
-| **Live Engram integration is untested in CI** | Medium | The live adapter (`src/engram/liveEngramAdapter.ts`) requires `ENGRAM_BASE_URL` and `ENGRAM_PROJECT`. CI doesn't set these. The live path is exercised only on developer machines that have Engram running. |
-| **`ragServer` has no dedicated tests** | Low-Medium | `src/mcp/ragServer.ts` — the MCP server entry — has no unit tests. The tools it exposes are tested individually, and `mcpSmoke` does a surface check. But if the server wiring breaks, the test suite won't catch it directly. |
-| **`dashboardServer` is v1 dead code** | Low | `src/api/dashboardServer.ts` is from the v1 architecture. It has no tests, no callers in v2. It's a 236-line module that serves a stale HTML dashboard. It should either be removed or brought into v2. |
-| **`verifyAll` has a Windows path quirk** | Low | The `invokedDirectly` detection in `src/cli/verifyAll.ts` constructs a `file://` URL manually. On Windows, this may produce a malformed URL depending on the Node.js version. The MCP path doesn't use this, so it only affects direct CLI invocation. |
-| **`reports/verify-all/` is a generated artifact** | Low | The README lists `reports/verify-all/verify-report.json` as a "source of truth" document, but it's generated at runtime by `npm run verify:all`, not committed. The `.gitkeep` directories in `reports/phase1-4/` are vestigial. |
-| **No performance benchmarks** | Low | There's no benchmark suite. A retrieval system should have p50/p95 latency benchmarks tracked over time. The eval scores exist (`top1_hit_rate`, `top3_hit_rate`) but not latency regressions. |
-| **No npm audit done** | Low | Dependencies have never been audited for vulnerabilities. `npm audit` should be run and fixed. |
-| **CI status unknown** | Low | `.github/workflows/ci.yml` exists but there's no badge and no evidence that it currently passes on GitHub Actions. The workflow references PR5 scripts that were recently merged. |
+### Resumen
 
-### Summary
+El código es **funcional y está bien diseñado** pero tiene **dos riesgos reales**:
 
-The codebase is **functional and well-designed** but has **two real risks**:
-
-1. **The live Engram integration is untested in CI.** If Engram changes its API, the live adapter will break silently. The fake adapter tests pin the expected behavior, but there's no regression detection for the live path.
-2. **No one has shipped this to production.** The MCP server works (proven by `mcp:smoke`), but there's no evidence it's been wired into an agent workflow and exercised in a real edit session.
-
-The rest of the issues are minor — dead code, stale docs, missing benchmarks.
+1. **La integración live con Engram no se testea en CI.** Si Engram cambia su API, el adaptador live se rompe silenciosamente.
+2. **Nadie lo llevó a producción.** El MCP server funciona, pero no hay evidencia de que se haya conectado a un flujo de agente real.
 
 ---
 
-## Quickstart
+## Cómo arrancar
 
 ```bash
 npm install
@@ -114,27 +90,26 @@ npm test
 npm run verify:all
 ```
 
-| Command | What it does |
-|---------|--------------|
-| `npm install` | Installs TypeScript, Vitest, Zod, and tsx. |
-| `npm test` | Runs the full Vitest suite (65 test files). |
-| `npm run verify:all` | **The single source of truth.** Runs focused tests, static guardrails, `npx tsc --noEmit`, and the `mcp:smoke` check. Exits non-zero on any failure. |
-| `npm run mcp:smoke` | Pure-data MCP smoke (tool list, no-rag_* guard, cross-platform launcher check). |
-| `npm run verify:phase1` ... `verify:phase4` | Phase-specific verify scripts (subset of `verify:all`). |
+| Comando | Qué hace |
+|---------|----------|
+| `npm install` | Instala TypeScript, Vitest, Zod, y tsx |
+| `npm test` | Corre los 65 tests de Vitest |
+| `npm run verify:all` | **Fuente de verdad única.** Corre tests, guardrails, `tsc --noEmit`, y `mcp:smoke`. Sale non-zero si algo falla. |
+| `npm run mcp:smoke` | Smoke test del MCP server (lista de tools, guardas, launcher) |
 
 ---
 
-## Architecture
+## Arquitectura
 
 ```
                           ┌──────────────────────┐
                           │     MCP Client        │
-                          │  (opencode / agent)   │
+                          │  (opencode / agente)  │
                           └──────────┬───────────┘
                                      │ stdio
                           ┌──────────▼───────────┐
                           │   mcp/ragServer.ts   │
-                          │    (7 tools)         │
+                          │    (7 herramientas)  │
                           └───┬─────────────┬────┘
                               │             │
                  ┌────────────▼────┐  ┌────▼────────────┐
@@ -152,196 +127,135 @@ npm run verify:all
                         │            │  ragEval.ts     │
               ┌─────────▼───────┐    └─────────────────┘
               │  Engram memory  │
-              │  (live HTTP or  │
+              │  (live HTTP o   │
               │   fake adapter) │
               └─────────────────┘
 ```
 
-The two surfaces are wired into the same MCP server but are contractually separate:
-- The operational layer never calls `rag_*` tools
-- The document RAG never calls Engram
-- `mcp:smoke` enforces this with a static scan
-
 ---
 
-## Project layout
+## Layout del proyecto
 
 ```
 .
 ├── src/
-│   ├── contracts/         # Zod schemas and topic key policy
-│   ├── retrieval/         # buildRetrievalPlan() — pure, deterministic
-│   ├── rag/               # Document RAG: hybrid/semantic/graph retrieval, embedder, eval
-│   ├── engram/            # Operational loop: preflight, enforcement, trace, adapters
-│   ├── mcp/               # MCP server + operational tools + metrics persistence
-│   ├── cli/               # preflight, mcpSmoke, verifyAll, phase verify scripts
+│   ├── contracts/         # Esquemas Zod y política de topic keys
+│   ├── retrieval/         # buildRetrievalPlan() — pura, determinista
+│   ├── rag/               # RAG documental: recuperación híbrida/semántica/grafo, embedder, eval
+│   ├── engram/            # Loop operacional: preflight, enforcement, trace, adaptadores
+│   ├── mcp/               # Servidor MCP + herramientas operacionales + métricas
+│   ├── cli/               # preflight, mcpSmoke, verifyAll, scripts de verificación por fase
 │   └── skills/            # installSkills, patchLiveSkills, renderRagBlock
-├── test/                  # Vitest tests (65 files), mirrors src/
-├── fixtures/              # Validated knowledge records and corpus documents
-├── eval/                  # RAG eval scenarios (JSON fixture sets)
-├── scripts/               # eval-fake-vs-live.ts — operational parity script
+├── test/                  # Tests Vitest (65 archivos), espeja src/
+├── fixtures/              # Registros de conocimiento validados y corpus
+├── eval/                  # Escenarios de eval RAG (JSON)
+├── scripts/               # eval-fake-vs-live.ts — paridad operacional
 ├── bin/
-│   └── engram-rag-stdio.mjs  # Cross-platform stdio launcher
-├── openspec/              # SDD artifacts (proposal, design, tasks, specs)
-├── docs/                  # Phase acceptance docs, forensic evidence
-├── reports/               # Generated verify reports (runtime artifacts)
-├── rag-system/            # Historical v1 and v2 design documents
-│   ├── v2/                # v2 charter, design, phase tasks
-│   ├── fase-2/            # v1 — read only
-│   ├── fase-final/        # v1 — read only
-│   └── dashboard/         # v1 — read only, possibly broken
+│   └── engram-rag-stdio.mjs  # Launcher stdio multiplataforma
+├── openspec/              # Artefactos SDD (propuesta, diseño, tareas, specs)
+├── docs/                  # Docs de aceptación por fase
+├── reports/               # Reportes de verificación generados (artefactos runtime)
+├── rag-system/            # Documentos históricos v1 y v2
+│   ├── v2/                # Charter v2, diseño, tareas por fase
+│   ├── fase-2/            # v1 — solo lectura
+│   ├── fase-final/        # v1 — solo lectura
+│   └── dashboard/         # v1 — solo lectura, probablemente roto
 └── .github/workflows/     # CI
 ```
 
 ---
 
-## Exit code matrix
+## Superficie MCP
 
-The preflight CLIs, `verify:all`, and `mcp:smoke` share a stable exit code convention:
+| Tool | Sistema | Opera sobre | Respaldado por |
+|------|---------|-------------|----------------|
+| `error_preflight` | Error-learning loop | Memorias Engram (live HTTP o fake) | `src/engram/runPreflight.ts`, `src/engram/enforcement.ts` |
+| `error_learn` | Error-learning loop | Memorias Engram | `src/engram/fakeEngramAdapter.ts` o `liveEngramAdapter.ts` |
+| `error_stats` | Error-learning loop | `OperationalMetricsState` en proceso | `src/mcp/operationalMetrics.ts` |
+| `rag_query` | Document RAG (legacy) | Corpus (`fixtures/corpus`) | `src/rag/retriever.ts`, `src/rag/hybridRetriever.ts` |
+| `rag_ingest` | Document RAG (legacy) | Corpus | `src/rag/semanticRetriever.ts`, `src/rag/graphIndex/store.ts` |
+| `rag_eval` | Document RAG (legacy) | Escenarios de eval contra corpus | `src/rag/ragEval.ts` |
+| `rag_stats` | Document RAG (legacy) | Corpus cargado | `src/rag/corpusLoader.ts`, `src/rag/chunker.ts` |
 
-| Exit | Meaning | When |
-|------|---------|------|
-| **0** | `allow` | Clean preflight, action permitted. All checks in `verify:all` passed. |
-| **1** | Invalid flags | Unrecognized CLI argument, missing required value. |
-| **2** | Degraded safe | Preflight was degraded on a safe action (read/spec/design/review) — proceed but context may be incomplete. |
-| **3** | Transport | Engram unreachable, task file missing, MCP smoke I/O error. |
-| **4** | `correct` / `blocked` | Preflight enforcement returned a correction (run `corrected_command`) or a block (do not run the original). This is the P0 acceptance exit for `&&` → `cmd1; if ($?) { cmd2 }`. |
-| **5** | Internal | Reserved for future use. |
-
-`verify:all` only emits 0 / 1 / 2 / 3.
-
----
-
-## MCP surface
-
-| Tool | Surface | Operates on | Backed by |
-|------|---------|-------------|-----------|
-| `rag_query` | Document RAG | Corpus (default `fixtures/corpus`) | `src/rag/retriever.ts`, `src/rag/hybridRetriever.ts` |
-| `rag_ingest` | Document RAG | Corpus | `src/rag/semanticRetriever.ts`, `src/rag/graphIndex/store.ts` |
-| `rag_eval` | Document RAG | Eval scenarios against corpus | `src/rag/ragEval.ts` |
-| `rag_stats` | Document RAG | Loaded corpus | `src/rag/corpusLoader.ts`, `src/rag/chunker.ts` |
-| `error_preflight` | Operational | Engram memories (live HTTP or fake) | `src/engram/runPreflight.ts`, `src/engram/enforcement.ts` |
-| `error_learn` | Operational | Engram memories | `src/engram/fakeEngramAdapter.ts` or `liveEngramAdapter.ts` |
-| `error_stats` | Operational | In-process `OperationalMetricsState` | `src/mcp/operationalMetrics.ts` |
-
-### opencode MCP config
+### Config para opencode
 
 ```jsonc
 {
   "mcp": {
-    "engram-rag": {
+    "Proyecto_ErrorLog": {
       "type": "stdio",
       "command": "node",
-      "args": ["<absolute-path-to>/engram-rag/bin/engram-rag-stdio.mjs"],
+      "args": ["<ruta-absoluta>/engram-rag/bin/engram-rag-stdio.mjs"],
       "env": {
         "ENGRAM_BASE_URL": "http://127.0.0.1:7437",
-        "ENGRAM_PROJECT": "engram-rag"
+        "ENGRAM_PROJECT": "Proyecto_ErrorLog"
       }
     }
   }
 }
 ```
 
-Do NOT embed `cmd /c "cd <repo> && ..."` in your MCP config — Node warns loudly, paths with spaces break, and the parent shell becomes a hidden dependency. The launcher uses `child_process.spawn` with `shell: false`; it works the same on all platforms.
+No uses `cmd /c "cd <repo> && ..."` en la config MCP. El launcher usa `child_process.spawn` con `shell: false`; funciona igual en todas las plataformas.
 
 ---
 
-## Windows-safe shell pattern
+## Cobertura de tests
 
-PowerShell does not support `&&`. The standard fix is:
+65 archivos de test para 50 módulos fuente. Cobertura por área:
 
-```powershell
-cmd1; if ($?) { cmd2 }
-```
-
-When the preflight engine returns `enforcement.outcome: "correct"`, the `corrected_command` field contains the PowerShell-safe form. Never parse prose — use the typed field.
-
-In CI recipes, in shell scripts, and in the launcher: use the `cmd1; if ($?) { cmd2 }` form. Never embed `cd <repo> &&` in a single-line PowerShell pipeline.
-
----
-
-## Test coverage
-
-65 test files across 50 source modules. Coverage by area:
-
-| Area | Source files | Test files | Status |
+| Área | Source files | Test files | Estado |
 |------|-------------|------------|--------|
-| **Contracts** | 5 | 5 | Full |
-| **Retrieval planner** | 1 | 2 | Full |
-| **RAG engine** (chunker, retriever, hybrid, semantic, corpus, eval) | 10 | 11 | Full |
-| **Embedder system** (registry, embedder, hashing) | 5 | 4 | Full |
-| **Graph index** (extract, store, traverse) | 3 | 4 | Full |
-| **Vector index** (cosine, store) | 2 | 2 | Full |
-| **Engram loop** (preflight, enforcement, trace, adapters) | 7 | 15 | Full |
-| **MCP tools** (operational tools, metrics) | 2 | 3 | Partial (tools tested individually; `ragServer.ts` has no test) |
-| **CLI** (verifyAll, mcpSmoke, preflight) | 4 | 5 | Full |
-| **Guardrails** | — | 6 | Full |
-| **CI** | — | 1 | Full |
-| **v1 (dashboardServer)** | 1 | 0 | None — dead code |
-| **RRF** | 1 | 1 (via hybridRetriever) | Tested indirectly |
+| Contracts | 5 | 5 | Completo |
+| Retrieval planner | 1 | 2 | Completo |
+| RAG engine (chunker, retriever, hybrid, semantic, corpus, eval) | 10 | 11 | Completo |
+| Embedder system (registry, embedder, hashing) | 5 | 4 | Completo |
+| Graph index (extract, store, traverse) | 3 | 4 | Completo |
+| Vector index (cosine, store) | 2 | 2 | Completo |
+| Engram loop (preflight, enforcement, trace, adapters) | 7 | 15 | Completo |
+| MCP tools (operational tools, metrics) | 2 | 3 | Parcial (tools probadas individualmente; `ragServer.ts` sin test) |
+| CLI (verifyAll, mcpSmoke, preflight) | 4 | 5 | Completo |
+| Guardrails | — | 6 | Completo |
+| CI | — | 1 | Completo |
+| v1 (dashboardServer) | 1 | 0 | Sin tests — dead code |
+| RRF | 1 | 1 (via hybridRetriever) | Probado indirectamente |
+
+---
+
+## Estado por fase
+
+| Fase | Qué | Estado | Notas |
+|------|-----|--------|-------|
+| **1** | Knowledge contract + retrieval planner | ✅ Implementado | `npm run verify:phase1` verde. `buildRetrievalPlan` es función pura. |
+| **2** | Engram preflight adapter + enforcement | ✅ Implementado | Adaptador fake + live, `runPreflight`, `PreflightEnforcement` tipado. |
+| **3** | Skill integration | ✅ Implementado | `installSkills`, `patchLiveSkills` — ambos verdes. |
+| **4** | Eval harness + métricas operacionales | ✅ Implementado | `eval-fake-vs-live.ts`, `OperationalMetricsState` persistente, trace IDs estables. |
+| **5** | Verification gates, MCP smoke, launcher | ✅ Implementado | `verify:all`, `mcp:smoke`, launcher stdio, matriz de exit codes. |
+| **6** | Document-RAG correctness cleanup | ✅ Implementado (PR6/#32) | Mergeado a main. |
 
 ---
 
 ## CI
 
-`.github/workflows/ci.yml` runs on push to `main` and on pull requests:
+`.github/workflows/ci.yml` corre en push a `main` y en pull requests:
 
 - `npm ci`
-- `npm test`
+- `npm test`  
 - `npm run verify:all -- --skip-live`
 - `npm run mcp:smoke`
-- Phase 1–4 verify scripts
+- Scripts de verificación fase 1–4
 
-**Note:** The live Engram path (`--skip-live` flag means it's excluded). CI exercises the fake adapter only. If the real Engram API changes, CI won't detect it.
-
----
-
-## Phase status
-
-| Phase | What | Status | Notes |
-|-------|------|--------|-------|
-| **1** | Knowledge contract + retrieval planner | ✅ Implemented | `npm run verify:phase1` is green. `buildRetrievalPlan` is a pure function. |
-| **2** | Engram preflight adapter + enforcement | ✅ Implemented | Fake + live adapter, `runPreflight`, typed `PreflightEnforcement`. |
-| **3** | Skill integration | ✅ Implemented | `installSkills`, `patchLiveSkills` — both green. |
-| **4** | Eval harness + operational metrics persistence | ✅ Implemented | `eval-fake-vs-live.ts`, persistent `OperationalMetricsState`, stable trace IDs. |
-| **5** | Verification gates, MCP smoke, cross-platform launcher | ✅ Implemented | `verify:all`, `mcp:smoke`, stdio launcher, exit code matrix. |
-| **6** | Document-RAG correctness cleanup | ✅ Implemented (PR6/#32) | Merged to main. The README was stale — this was marked "not started" but PR6 was merged before the last update. |
-
-**Note on Phase 6:** The previous version of this README showed Phase 6 as "not started." That was accurate at the time of writing but PR6 was since merged. This README now reflects the current state of `main`.
+**Nota:** el path live de Engram está excluido en CI (`--skip-live`). CI ejercita solo el adaptador fake.
 
 ---
 
-## Key contracts
+## Fuentes de verdad
 
-| Module | Purpose |
-|--------|---------|
-| `src/contracts/topicKeys.ts` | `CANONICAL_PROTOCOL_TOPIC_KEY` and the forbidden v1 alias list |
-| `src/contracts/knowledgeRecord.ts` | Zod schema for `KnowledgeRecord` (strict mode) |
-| `src/contracts/retrieval.ts` | Zod schemas for `RetrievalRequest` and `RetrievalPlan` |
-| `src/retrieval/retrievalPlan.ts` | `buildRetrievalPlan(request)` — pure, deterministic, no I/O |
-| `src/engram/enforcement.ts` | Typed `PreflightEnforcement` — `allow` / `correct` / `blocked` |
-| `src/engram/trace.ts` | Deterministic `trace_id` + `stable_trace_id` |
-| `src/mcp/operationalTools.ts` | SDK-free `error_preflight` / `error_learn` / `error_stats` handlers |
-| `src/mcp/operationalMetrics.ts` | Persistent `OperationalMetricsState` (JSON on disk) |
-
----
-
-## Source of truth
-
-| Document | What it covers |
-|----------|----------------|
-| **`openspec/config.yaml`** | SDD project configuration |
-| `openspec/changes/agent-error-learning-loop/proposal.md` | Why the loop exists, scope, success criteria |
-| `openspec/changes/agent-error-learning-loop/design.md` | Architecture, contracts, data flow, PR boundaries |
-| `openspec/changes/agent-error-learning-loop/tasks.md` | Atomic tasks with review workload forecast |
-| `openspec/changes/agent-error-learning-loop/specs/agent-error-learning-loop/spec.md` | Spec scenario set (Gherkin-style) |
-| `rag-system/v2/charter.md` | Why v2 exists, success metrics, scope |
-| `rag-system/v2/design.md` | Phases 1–4 architecture, contracts, verify-report schema |
-| `reports/verify-all/verify-report.json` | **Generated** — machine-readable proof that `verify:all` is green (run `npm run verify:all` to produce it) |
-| `docs/phase1-acceptance.md` through `docs/phase5-acceptance.md` | Phase acceptance criteria |
-
----
-
-## License
-
-Unpublished work — all rights reserved.
+| Documento | Qué cubre |
+|-----------|-----------|
+| `openspec/config.yaml` | Configuración del proyecto SDD |
+| `openspec/changes/agent-error-learning-loop/proposal.md` | Por qué existe el loop, alcance, criterios de éxito |
+| `openspec/changes/agent-error-learning-loop/design.md` | Arquitectura, contratos, flujo de datos, límites de PRs |
+| `openspec/changes/agent-error-learning-loop/tasks.md` | Tareas atómicas con forecast de carga de revisión |
+| `rag-system/v2/charter.md` | Por qué existe v2, métricas de éxito, alcance |
+| `rag-system/v2/design.md` | Arquitectura fases 1–4, contratos |
+| `reports/verify-all/verify-report.json` | **Generado** — prueba machine-readable de que `verify:all` está verde (correr `npm run verify:all` para producirlo) |
